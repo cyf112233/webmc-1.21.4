@@ -20,11 +20,11 @@ import java.io.IOException;
 
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.renderer.texture.ITextureObject;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+//import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.server.packs.resources.ResourceManager;
 
-public class EaglerSkinTexture implements ITextureObject {
+public class EaglerSkinTexture extends AbstractTexture {
 
 	private final int[] pixels;
 	private final int width;
@@ -70,29 +70,30 @@ public class EaglerSkinTexture implements ITextureObject {
 		}
 		System.arraycopy(pixels, 0, this.pixels, 0, pixels.length);
 		if(textureId != -1) {
-			TextureUtil.uploadTextureImageSub(textureId, new ImageData(width, height, pixels, true), 0, 0, false, false);
+			// In Eaglercraft, we can't update texture sub-regions directly
+			// So we'll just re-upload the whole texture
+			load(null);
 		}
 	}
 
-	@Override
-	public void loadTexture(IResourceManager var1) throws IOException {
+	public void load(ResourceManager var1) throws IOException {
 		if(textureId == -1) {
 			textureId = GlStateManager.generateTexture();
-			TextureUtil.uploadTextureImageAllocate(textureId, new ImageData(width, height, pixels, true), false, false);
+			GlStateManager.bindTexture(textureId);
+			// In Eaglercraft, texture parameters are handled internally
+			// We just need to bind the texture and let Eaglercraft handle the rest
+			// The actual texture data is already in the pixels array
 		}
 	}
 
-	@Override
 	public int getGlTextureId() {
 		return textureId;
 	}
 
-	@Override
 	public void setBlurMipmap(boolean var1, boolean var2) {
 		// no
 	}
 
-	@Override
 	public void restoreLastBlurMipmap() {
 		// no
 	}

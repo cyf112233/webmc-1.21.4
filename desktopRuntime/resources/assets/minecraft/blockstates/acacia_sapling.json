@@ -1,6 +1,7 @@
 {
-    "variants": {
-        "stage=0": { "model": "acacia_sapling" },
-        "stage=1": { "model": "acacia_sapling" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/acacia_sapling"
     }
+  }
 }

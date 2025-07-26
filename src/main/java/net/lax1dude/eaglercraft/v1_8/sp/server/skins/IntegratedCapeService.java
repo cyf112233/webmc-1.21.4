@@ -25,7 +25,7 @@ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessagePacket;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketOtherCapePresetEAG;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.level.ServerPlayer;
 
 public class IntegratedCapeService {
 
@@ -35,7 +35,7 @@ public class IntegratedCapeService {
 
 	private final Map<EaglercraftUUID, GameMessagePacket> capesCache = new HashMap<>();
 
-	public void processLoginPacket(byte[] packetData, EntityPlayerMP sender) {
+	public void processLoginPacket(byte[] packetData, ServerPlayer sender) {
 		try {
 			IntegratedCapePackets.registerEaglerPlayer(sender.getUniqueID(), packetData, this);
 		} catch (IOException e) {
@@ -49,7 +49,7 @@ public class IntegratedCapeService {
 		capesCache.put(playerUUID, capePacket);
 	}
 
-	public void processGetOtherCape(EaglercraftUUID searchUUID, EntityPlayerMP sender) {
+	public void processGetOtherCape(EaglercraftUUID searchUUID, ServerPlayer sender) {
 		GameMessagePacket maybeCape = capesCache.get(searchUUID);
 		if(maybeCape == null) {
 			maybeCape = new SPacketOtherCapePresetEAG(searchUUID.msb, searchUUID.lsb, 0);

@@ -53,7 +53,7 @@ public class RelayWorldsQueryRateLimitDummy implements RelayWorldsQuery {
 	}
 
 	@Override
-	public List<RelayPacket07LocalWorlds.LocalWorld> getWorlds() {
+	public List<RelayPacket07LocalWorlds.LocalWorld> getLevels() {
 		return new ArrayList<>(0);
 	}
 

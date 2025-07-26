@@ -17,9 +17,9 @@
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.texture;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.BlockPos;
-import net.minecraft.util.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 
 public class TextureCompassPBRImpl extends EaglerTextureAtlasSpritePBR {
 	public double currentAngle;
@@ -31,24 +31,24 @@ public class TextureCompassPBRImpl extends EaglerTextureAtlasSpritePBR {
 
 	public void updateAnimationPBR() {
 		Minecraft minecraft = Minecraft.getMinecraft();
-		if (minecraft.theWorld != null && minecraft.thePlayer != null) {
-			this.updateCompassPBR(minecraft.theWorld, minecraft.thePlayer.posX, minecraft.thePlayer.posZ,
-					(double) minecraft.thePlayer.rotationYaw, false);
+		if (minecraft.theLevel != null && minecraft.player != null) {
+			this.updateCompassPBR(minecraft.theLevel, minecraft.player.getX(), minecraft.player.getZ(),
+					(double) minecraft.player.getYRot(), false);
 		} else {
-			this.updateCompassPBR((World) null, 0.0, 0.0, 0.0, true);
+			this.updateCompassPBR((Level) null, 0.0, 0.0, 0.0, true);
 		}
 	}
 
-	public void updateCompassPBR(World worldIn, double playerX, double playerY, double playerZ, boolean noWorld) {
+	public void updateCompassPBR(Level worldIn, double playerX, double playerY, double playerZ, boolean noLevel) {
 		if (!this.frameTextureDataPBR[0].isEmpty()) {
 			double d0 = 0.0;
-			if (worldIn != null && !noWorld) {
+			if (worldIn != null && !noLevel) {
 				BlockPos blockpos = worldIn.getSpawnPoint();
 				double d1 = (double) blockpos.getX() - playerX;
 				double d2 = (double) blockpos.getZ() - playerY;
 				playerZ = playerZ % 360.0;
 				d0 = -((playerZ - 90.0) * Math.PI / 180.0 - Math.atan2(d2, d1));
-				if (!worldIn.provider.isSurfaceWorld()) {
+				if (!worldIn.provider.isSurfaceLevel()) {
 					d0 = Math.random() * Math.PI * 2.0;
 				}
 			}
@@ -62,7 +62,7 @@ public class TextureCompassPBRImpl extends EaglerTextureAtlasSpritePBR {
 				d3 -= Math.PI * 2.0;
 			}
 
-			d3 = MathHelper.clamp_double(d3, -1.0, 1.0);
+			d3 = Mth.clamp_double(d3, -1.0, 1.0);
 			this.angleDelta += d3 * 0.1;
 			this.angleDelta *= 0.8;
 			this.currentAngle += this.angleDelta;

@@ -16,7 +16,7 @@
 
 package net.lax1dude.eaglercraft.v1_8.notifications;
 
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.chat.Component;
 
 public class ClickEventZone {
 
@@ -24,14 +24,14 @@ public class ClickEventZone {
 	public final int posY;
 	public final int width;
 	public final int height;
-	public final IChatComponent chatComponent;
+	public final Component chatComponent;
 	public final boolean hasHoverEvent;
 	public final boolean hasClickEvent;
 
-	public ClickEventZone(int posX, int posY, int width, int height, IChatComponent chatComponent,
+	public ClickEventZone(int posX, int posY, int width, int height, Component chatComponent,
 			boolean hasHoverEvent, boolean hasClickEvent) {
-		this.posX = posX;
-		this.posY = posY;
+		this.getX() = posX;
+		this.getY() = posY;
 		this.width = width;
 		this.height = height;
 		this.chatComponent = chatComponent;

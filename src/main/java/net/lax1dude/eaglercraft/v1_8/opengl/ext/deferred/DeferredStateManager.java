@@ -20,9 +20,9 @@ import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector3f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.MathHelper;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.util.Mth;
 
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 
@@ -64,7 +64,7 @@ public class DeferredStateManager {
 
 	static float clipPlaneY = 0.0f;
 
-	static AxisAlignedBB shadowMapBounds = new AxisAlignedBB(-1, -1, -1, 1, 1, 1);
+	static AABB shadowMapBounds = new AABB(-1, -1, -1, 1, 1, 1);
 
 	static float gbufferNearPlane = 0.01f;
 	static float gbufferFarPlane = 128.0f;
@@ -162,9 +162,12 @@ public class DeferredStateManager {
 			if(!cfg.is_rendering_dynamicLights || !cfg.shaderPackInfo.DYNAMIC_LIGHTS) {
 				return;
 			}
-			float posX = (float)((x + TileEntityRendererDispatcher.staticPlayerX) - (MathHelper.floor_double(TileEntityRendererDispatcher.staticPlayerX / 16.0) << 4));
-			float posY = (float)((y + TileEntityRendererDispatcher.staticPlayerY) - (MathHelper.floor_double(TileEntityRendererDispatcher.staticPlayerY / 16.0) << 4));
-			float posZ = (float)((z + TileEntityRendererDispatcher.staticPlayerZ) - (MathHelper.floor_double(TileEntityRendererDispatcher.staticPlayerZ / 16.0) << 4));
+			float cameraX = (float)BlockEntityRenderDispatcher.camera.getPosition().x;
+			float cameraY = (float)BlockEntityRenderDispatcher.camera.getPosition().y;
+			float cameraZ = (float)BlockEntityRenderDispatcher.camera.getPosition().z;
+			float posX = (float)((x + cameraX) - (Mth.floor_double(cameraX / 16.0) << 4));
+			float posY = (float)((y + cameraY) - (Mth.floor_double(cameraY / 16.0) << 4));
+			float posZ = (float)((z + cameraZ) - (Mth.floor_double(cameraZ / 16.0) << 4));
 			instance.bindLightSourceBucket((int)posX, (int)posY, (int)posZ, 1);
 		}
 	}
@@ -308,11 +311,11 @@ public class DeferredStateManager {
 		constantBlock = blockId;
 	}
 
-	public static AxisAlignedBB getShadowMapBounds() {
+	public static AABB getShadowMapBounds() {
 		return shadowMapBounds;
 	}
 
-	public static void setShadowMapBounds(AxisAlignedBB newShadowMapBounds) {
+	public static void setShadowMapBounds(AABB newShadowMapBounds) {
 		shadowMapBounds = newShadowMapBounds;
 	}
 

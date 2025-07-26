@@ -38,7 +38,7 @@ import net.lax1dude.eaglercraft.v1_8.opengl.StreamBuffer.StreamBufferInstance;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights.DynamicLightsStateManager;
 import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
-import net.minecraft.util.MathHelper;
+import net.minecraft.util.Mth;
 
 import static net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionState.*;
 import static net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionConstants.*;
@@ -911,7 +911,7 @@ public class FixedFunctionPipeline {
 					float x = GlStateManager.stateNormalX;
 					float y = GlStateManager.stateNormalY;
 					float z = GlStateManager.stateNormalZ;
-					float c = 1.0f / MathHelper.sqrt_float(x * x + y * y + z * z);
+					float c = 1.0f / Mth.sqrt_float(x * x + y * y + z * z);
 					x *= c; y *= c; z *= c;
 					if(stateNormalX != x || stateNormalY != y || stateNormalZ != z) {
 						stateNormalX = x;

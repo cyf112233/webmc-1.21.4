@@ -20,7 +20,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebView;
 import net.lax1dude.eaglercraft.v1_8.internal.WebViewOptions;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessagePacket;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketWebViewMessageV4EAG;
-import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class WebViewOverlayController {
 
@@ -40,12 +40,12 @@ public class WebViewOverlayController {
 		PlatformWebView.resize(x, y, w, h);
 	}
 
-	public static void beginShowingSmart(WebViewOptions options, ScaledResolution res, int x, int y, int w, int h) {
+	public static void beginShowingSmart(WebViewOptions options, GuiGraphics res, int x, int y, int w, int h) {
 		int fac = res.getScaleFactor();
 		PlatformWebView.beginShowing(options, x * fac, y * fac, w * fac, h * fac);
 	}
 
-	public static void resizeSmart(ScaledResolution res, int x, int y, int w, int h) {
+	public static void resizeSmart(GuiGraphics res, int x, int y, int w, int h) {
 		int fac = res.getScaleFactor();
 		PlatformWebView.resize(x * fac, y * fac, w * fac, h * fac);
 	}

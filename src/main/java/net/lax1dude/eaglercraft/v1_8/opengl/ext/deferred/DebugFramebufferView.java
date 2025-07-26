@@ -146,7 +146,7 @@ public class DebugFramebufferView {
 				DrawUtils.drawStandardQuad2D();
 			})),
 			(new DebugFramebufferView("GBuffer Subsurface Scattering", (pipeline) -> {
-				if(!pipeline.config.is_rendering_subsurfaceScattering || Minecraft.getMinecraft().theWorld.provider.getDimensionId() != 0) throw new NoDataException();
+				if(!pipeline.config.is_rendering_subsurfaceScattering || Minecraft.getMinecraft().theLevel.provider.getDimensionId() != 0) throw new NoDataException();
 				pipeline.useDebugViewShader(6);
 				GlStateManager.setActiveTexture(GL_TEXTURE0);
 				GlStateManager.bindTexture(pipeline.subsurfaceScatteringTexture);
@@ -430,7 +430,7 @@ public class DebugFramebufferView {
 				GlStateManager.bindTexture(pipeline.bloomVBlurTexture);
 				DrawUtils.drawStandardQuad2D();
 			})),
-			(new DebugFramebufferView("Sun Occlusion: World", (pipeline) -> {
+			(new DebugFramebufferView("Sun Occlusion: Level", (pipeline) -> {
 				pipeline.useDebugViewShader(6);
 				GlStateManager.setActiveTexture(GL_TEXTURE0);
 				GlStateManager.bindTexture(CloudRenderWorker.cloudOcclusionTexture);
@@ -481,11 +481,11 @@ public class DebugFramebufferView {
 			if(noData) {
 				String noDataTxt = "No Data";
 				mc.entityRenderer.setupOverlayRendering();
-				int viewNameWidth = mc.fontRendererObj.getStringWidth(noDataTxt) * 2;
+				int viewNameWidth = mc.font.getStringWidth(noDataTxt) * 2;
 				GlStateManager.pushMatrix();
 				GlStateManager.translate((w - viewNameWidth) * 0.5f, h - 70.0f, 0.0f);
 				GlStateManager.scale(2.0f, 2.0f, 2.0f);
-				mc.fontRendererObj.drawStringWithShadow(noDataTxt, 0, 0, 0xFFFFFFFF);
+				mc.font.drawStringWithShadow(noDataTxt, 0, 0, 0xFFFFFFFF);
 				GlStateManager.popMatrix();
 			}
 			
@@ -494,7 +494,7 @@ public class DebugFramebufferView {
 					int i2 = currentDebugView - 4 + i;
 					if(i2 >= 0 && i2 < views.size()) {
 						String str = views.get(i2).name;
-						int j = mc.fontRendererObj.getStringWidth(str);
+						int j = mc.font.getStringWidth(str);
 						float alphaF = ((i == 0 || i == 8) ? 0.25f : ((i == 1 || i == 7) ? 0.65f : 1.0f));
 						int x = 5;
 						if(elapsed > 1800l) {
@@ -503,12 +503,12 @@ public class DebugFramebufferView {
 						}
 						int y = h + (i - 5) * 11;
 						Gui.drawRect(x, y, x + j + 2, y + 10, (int)(alphaF * 127.0f) << 24);
-						mc.fontRendererObj.drawStringWithShadow(str, x + 1, y + 1, (i == 4 ? 0xFFFF00 : 0xFFFFFF) | ((int)(alphaF * 255.0f) << 24));
+						mc.font.drawStringWithShadow(str, x + 1, y + 1, (i == 4 ? 0xFFFF00 : 0xFFFFFF) | ((int)(alphaF * 255.0f) << 24));
 					}
 				}
 
-				mc.fontRendererObj.drawStringWithShadow("Use arrow keys to select framebuffers", 5, 23, 0xFFFFFF);
-				mc.fontRendererObj.drawStringWithShadow("Press F+4 to exit", 5, 33, 0xFFFFFF);
+				mc.font.drawStringWithShadow("Use arrow keys to select framebuffers", 5, 23, 0xFFFFFF);
+				mc.font.drawStringWithShadow("Press F+4 to exit", 5, 33, 0xFFFFFF);
 			}
 			
 			GlStateManager.disableBlend();

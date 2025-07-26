@@ -19,12 +19,12 @@ package net.lax1dude.eaglercraft.v1_8.touch_gui;
 import net.lax1dude.eaglercraft.v1_8.Touch;
 import net.lax1dude.eaglercraft.v1_8.minecraft.EnumInputEvent;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.gui.GuiChat;
-import net.minecraft.client.gui.GuiMainMenu;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.settings.GameSettings;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Options;
 
 public enum EnumTouchControl {
 	
@@ -101,10 +101,10 @@ public enum EnumTouchControl {
 				Touch.closeDeviceKeyboard();
 			}else {
 				Minecraft mc = Minecraft.getMinecraft();
-				if(mc.thePlayer != null) {
+				if(mc.player != null) {
 					mc.setIngameFocus();
-				}else if(mc.currentScreen != null && !(mc.currentScreen instanceof GuiMainMenu)) {
-					mc.displayGuiScreen(null);
+				}else if(mc.screen != null && !(mc.screen instanceof TitleScreen)) {
+					mc.displayScreen(null);
 				}
 			}
 		}
@@ -144,7 +144,7 @@ public enum EnumTouchControl {
 	CHAT(EnumTouchControlPos.TOP, 18, 0, 36, (enumIn, x, y) -> {
 		if(!TouchControls.isPressed(enumIn)) {
 			Minecraft mc = Minecraft.getMinecraft();
-			mc.displayGuiScreen(new GuiChat());
+			mc.displayScreen(new ChatScreen());
 		}
 	}, (enumIn, x, y, pressed, mc, res) -> {
 		mc.getTextureManager().bindTexture(TouchOverlayRenderer.spriteSheet);
@@ -156,7 +156,7 @@ public enum EnumTouchControl {
 	F3(EnumTouchControlPos.TOP, 144, 0, 36, (enumIn, x, y) -> {
 		if(!TouchControls.isPressed(enumIn)) {
 			Minecraft mc = Minecraft.getMinecraft();
-			GameSettings gameSettings = mc.gameSettings;
+			Options gameSettings = mc.options;
 			gameSettings.showDebugInfo = !gameSettings.showDebugInfo;
 		}
 	}, (enumIn, x, y, pressed, mc, res) -> {
@@ -180,7 +180,7 @@ public enum EnumTouchControl {
 	
 	PASTE(EnumTouchControlPos.TOP, 144, 0, 36, (enumIn, x, y) -> {
 		if(!TouchControls.isPressed(enumIn)) {
-			GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+			Screen screen = Minecraft.getMinecraft().currentScreen;
 			if(screen != null) {
 				screen.fireInputEvent(EnumInputEvent.CLIPBOARD_PASTE, null);
 			}
@@ -194,7 +194,7 @@ public enum EnumTouchControl {
 	
 	COPY(EnumTouchControlPos.TOP, 90, 0, 36, (enumIn, x, y) -> {
 		if(!TouchControls.isPressed(enumIn)) {
-			GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+			Screen screen = Minecraft.getMinecraft().currentScreen;
 			if(screen != null) {
 				screen.fireInputEvent(EnumInputEvent.CLIPBOARD_COPY, null);
 			}
@@ -220,7 +220,7 @@ public enum EnumTouchControl {
 	FLY(EnumTouchControlPos.BOTTOM_LEFT, 16, 16, 36, (enumIn, x, y) -> {
 		if(!TouchControls.isPressed(enumIn)) {
 			TouchControls.resetSneak();
-			EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+			LocalPlayer player = Minecraft.getMinecraft().thePlayer;
 			player.jump();
 			player.capabilities.isFlying = true;
 		}
@@ -260,7 +260,7 @@ public enum EnumTouchControl {
 	}
 
 	public static interface TouchRender {
-		void call(EnumTouchControl enumIn, int x, int y, boolean pressed, Minecraft mc, ScaledResolution res);
+		void call(EnumTouchControl enumIn, int x, int y, boolean pressed, Minecraft mc, GuiGraphics res);
 	}
 
 	protected final EnumTouchControlPos pos;
@@ -284,7 +284,7 @@ public enum EnumTouchControl {
 		this.render = render;
 	}
 
-	public int[] getLocation(ScaledResolution scaledResolution, int[] loc) {
+	public int[] getLocation(GuiGraphics scaledResolution, int[] loc) {
 		if(loc == null) {
 			loc = new int[2];
 		}

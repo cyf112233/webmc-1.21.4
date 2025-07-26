@@ -1,64 +1,131 @@
 package net.minecraft.client.renderer.culling;
 
-import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.joml.FrustumIntersection;
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public class Frustum implements ICamera {
-	private ClippingHelper clippingHelper;
-	private double xPosition;
-	private double yPosition;
-	private double zPosition;
+@OnlyIn(Dist.CLIENT)
+public class Frustum {
+    public static final int OFFSET_STEP = 4;
+    private final FrustumIntersection intersection = new FrustumIntersection();
+    private final Matrix4f matrix = new Matrix4f();
+    private Vector4f viewVector;
+    private double camX;
+    private double camY;
+    private double camZ;
 
-	public Frustum() {
-		this(ClippingHelperImpl.getInstance());
-	}
+    public Frustum(Matrix4f p_254207_, Matrix4f p_254535_) {
+        this.calculateFrustum(p_254207_, p_254535_);
+    }
 
-	public Frustum(ClippingHelper parClippingHelper) {
-		this.clippingHelper = parClippingHelper;
-	}
+    public Frustum(Frustum p_194440_) {
+        this.intersection.set(p_194440_.matrix);
+        this.matrix.set(p_194440_.matrix);
+        this.camX = p_194440_.camX;
+        this.camY = p_194440_.camY;
+        this.camZ = p_194440_.camZ;
+        this.viewVector = p_194440_.viewVector;
+    }
 
-	public void setPosition(double d0, double d1, double d2) {
-		this.xPosition = d0;
-		this.yPosition = d1;
-		this.zPosition = d2;
-	}
+    public Frustum offsetToFullyIncludeCameraCube(int p_194442_) {
+        double d0 = Math.floor(this.camX / (double)p_194442_) * (double)p_194442_;
+        double d1 = Math.floor(this.camY / (double)p_194442_) * (double)p_194442_;
+        double d2 = Math.floor(this.camZ / (double)p_194442_) * (double)p_194442_;
+        double d3 = Math.ceil(this.camX / (double)p_194442_) * (double)p_194442_;
+        double d4 = Math.ceil(this.camY / (double)p_194442_) * (double)p_194442_;
 
-	/**+
-	 * Calls the clipping helper. Returns true if the box is inside
-	 * all 6 clipping planes, otherwise returns false.
-	 */
-	public boolean isBoxInFrustum(double parDouble1, double parDouble2, double parDouble3, double parDouble4,
-			double parDouble5, double parDouble6) {
-		return this.clippingHelper.isBoxInFrustum(parDouble1 - this.xPosition, parDouble2 - this.yPosition,
-				parDouble3 - this.zPosition, parDouble4 - this.xPosition, parDouble5 - this.yPosition,
-				parDouble6 - this.zPosition);
-	}
+        for (double d5 = Math.ceil(this.camZ / (double)p_194442_) * (double)p_194442_;
+            this.intersection
+                    .intersectAab(
+                        (float)(d0 - this.camX),
+                        (float)(d1 - this.camY),
+                        (float)(d2 - this.camZ),
+                        (float)(d3 - this.camX),
+                        (float)(d4 - this.camY),
+                        (float)(d5 - this.camZ)
+                    )
+                != -2;
+            this.camZ = this.camZ - (double)(this.viewVector.z() * 4.0F)
+        ) {
+            this.camX = this.camX - (double)(this.viewVector.x() * 4.0F);
+            this.camY = this.camY - (double)(this.viewVector.y() * 4.0F);
+        }
 
-	/**+
-	 * Returns true if the bounding box is inside all 6 clipping
-	 * planes, otherwise returns false.
-	 */
-	public boolean isBoundingBoxInFrustum(AxisAlignedBB axisalignedbb) {
-		return this.isBoxInFrustum(axisalignedbb.minX, axisalignedbb.minY, axisalignedbb.minZ, axisalignedbb.maxX,
-				axisalignedbb.maxY, axisalignedbb.maxZ);
-	}
+        return this;
+    }
+
+    public void prepare(double p_113003_, double p_113004_, double p_113005_) {
+        this.camX = p_113003_;
+        this.camY = p_113004_;
+        this.camZ = p_113005_;
+    }
+
+    private void calculateFrustum(Matrix4f p_253909_, Matrix4f p_254521_) {
+        p_254521_.mul(p_253909_, this.matrix);
+        this.intersection.set(this.matrix);
+        this.viewVector = this.matrix.transformTranspose(new Vector4f(0.0F, 0.0F, 1.0F, 0.0F));
+    }
+
+    public boolean isVisible(AABB p_113030_) {
+        int i = this.cubeInFrustum(p_113030_.minX, p_113030_.minY, p_113030_.minZ, p_113030_.maxX, p_113030_.maxY, p_113030_.maxZ);
+        return i == -2 || i == -1;
+    }
+
+    public int cubeInFrustum(BoundingBox p_366028_) {
+        return this.cubeInFrustum(
+            (double)p_366028_.minX(),
+            (double)p_366028_.minY(),
+            (double)p_366028_.minZ(),
+            (double)(p_366028_.maxX() + 1),
+            (double)(p_366028_.maxY() + 1),
+            (double)(p_366028_.maxZ() + 1)
+        );
+    }
+
+    private int cubeInFrustum(double p_362451_, double p_367560_, double p_367158_, double p_368539_, double p_363499_, double p_365163_) {
+        float f = (float)(p_362451_ - this.camX);
+        float f1 = (float)(p_367560_ - this.camY);
+        float f2 = (float)(p_367158_ - this.camZ);
+        float f3 = (float)(p_368539_ - this.camX);
+        float f4 = (float)(p_363499_ - this.camY);
+        float f5 = (float)(p_365163_ - this.camZ);
+        return this.intersection.intersectAab(f, f1, f2, f3, f4, f5);
+    }
+
+    public Vector4f[] getFrustumPoints() {
+        Vector4f[] avector4f = new Vector4f[]{
+            new Vector4f(-1.0F, -1.0F, -1.0F, 1.0F),
+            new Vector4f(1.0F, -1.0F, -1.0F, 1.0F),
+            new Vector4f(1.0F, 1.0F, -1.0F, 1.0F),
+            new Vector4f(-1.0F, 1.0F, -1.0F, 1.0F),
+            new Vector4f(-1.0F, -1.0F, 1.0F, 1.0F),
+            new Vector4f(1.0F, -1.0F, 1.0F, 1.0F),
+            new Vector4f(1.0F, 1.0F, 1.0F, 1.0F),
+            new Vector4f(-1.0F, 1.0F, 1.0F, 1.0F)
+        };
+        Matrix4f matrix4f = this.matrix.invert(new Matrix4f());
+
+        for (int i = 0; i < 8; i++) {
+            matrix4f.transform(avector4f[i]);
+            avector4f[i].div(avector4f[i].w());
+        }
+
+        return avector4f;
+    }
+
+    public double getCamX() {
+        return this.camX;
+    }
+
+    public double getCamY() {
+        return this.camY;
+    }
+
+    public double getCamZ() {
+        return this.camZ;
+    }
 }

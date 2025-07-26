@@ -17,10 +17,12 @@
 package net.lax1dude.eaglercraft.v1_8.minecraft;
 
 import java.io.IOException;
+import java.io.IOException;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.Callable;
+import java.util.ArrayList;
 
-import com.carrotsearch.hppc.cursors.IntCursor;
 import com.google.common.collect.Lists;
 
 import net.lax1dude.eaglercraft.v1_8.HString;
@@ -28,16 +30,41 @@ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.TextureClock;
-import net.minecraft.client.renderer.texture.TextureCompass;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.data.AnimationFrame;
-import net.minecraft.client.resources.data.AnimationMetadataSection;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
-import net.minecraft.util.ReportedException;
-import net.minecraft.util.ResourceLocation;
-import net.optifine.util.CounterInt;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.lax1dude.eaglercraft.v1_8.opengl.TextureUtil;
+import net.minecraft.client.resources.metadata.animation.AnimationFrame;
+import net.minecraft.client.resources.metadata.animation.AnimationMetadataSection;
+import net.lax1dude.eaglercraft.v1_8.minecraft.AnimationMetadataSectionWrapper;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.resources.ResourceLocation;
+// Direct color manipulation methods
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+
+final class ColorHelper {
+    public static int multiplyRGB(int color, float factor) {
+        int r = (int)((color >> 16 & 0xFF) * factor);
+        int g = (int)((color >> 8 & 0xFF) * factor);
+        int b = (int)((color & 0xFF) * factor);
+        return (color & 0xFF000000) | (r << 16) | (g << 8) | b;
+    }
+    
+    public static int alphaBlend(int color1, int color2, float alpha) {
+        float a = alpha;
+        float a1 = 1.0f - a;
+        int r1 = (color1 >> 16) & 0xFF;
+        int g1 = (color1 >> 8) & 0xFF;
+        int b1 = color1 & 0xFF;
+        int r2 = (color2 >> 16) & 0xFF;
+        int g2 = (color2 >> 8) & 0xFF;
+        int b2 = color2 & 0xFF;
+        int r = (int)(r1 * a1 + r2 * a);
+        int g = (int)(g1 * a1 + g2 * a);
+        int b = (int)(b1 * a1 + b2 * a);
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+}
 
 public class EaglerTextureAtlasSprite {
 
@@ -46,7 +73,7 @@ public class EaglerTextureAtlasSprite {
 	protected final String iconName;
 	protected List<int[][]> framesTextureData = Lists.newArrayList();
 	protected int[][] interpolatedFrameData;
-	protected AnimationMetadataSection animationMetadata;
+	protected AnimationMetadataSectionWrapper animationMetadata;
 	protected boolean rotated;
 	protected int originX;
 	protected int originY;
@@ -106,7 +133,7 @@ public class EaglerTextureAtlasSprite {
 		this.maxU = atlasSpirit.maxU;
 		this.minV = atlasSpirit.minV;
 		this.maxV = atlasSpirit.maxV;
-		if (atlasSpirit != Minecraft.getMinecraft().getTextureMapBlocks().getMissingSprite()) {
+		if (atlasSpirit != Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).getMissingTexture()) {
 			this.indexInMap = atlasSpirit.indexInMap;
 		}
 	}
@@ -226,6 +253,7 @@ public class EaglerTextureAtlasSprite {
 	}
 
 	public void loadSprite(ImageData[] images, AnimationMetadataSection meta) throws IOException {
+		this.animationMetadata = new AnimationMetadataSectionWrapper(meta);
 		this.resetSprite();
 		int i = images[0].width;
 		int j = images[0].height;
@@ -260,29 +288,23 @@ public class EaglerTextureAtlasSprite {
 			int k1 = i;
 			int l = i;
 			this.height = this.width;
-			if (meta.getFrameCount() > 0) {
-				for (IntCursor cur : meta.getFrameIndexSet()) {
-					int i1 = cur.value;
-					if (i1 >= j1) {
-						throw new RuntimeException("invalid frameindex " + i1);
-					}
-
-					this.allocateFrameTextureData(i1);
-					this.framesTextureData.set(i1, getFrameTextureData(aint, k1, l, i1));
-				}
-
-				this.animationMetadata = meta;
-			} else {
-				List<AnimationFrame> arraylist = Lists.newArrayList();
-
-				for (int l1 = 0; l1 < j1; ++l1) {
-					this.framesTextureData.add(getFrameTextureData(aint, k1, l, l1));
-					arraylist.add(new AnimationFrame(l1, -1));
-				}
-
-				this.animationMetadata = new AnimationMetadataSection(arraylist, this.width, this.height,
-						meta.getFrameTime(), meta.isInterpolate());
+			// Create default frames
+			List<AnimationFrame> frames = new ArrayList<>();
+			for (int l1 = 0; l1 < j1; ++l1) {
+				frames.add(new AnimationFrame(l1));
 			}
+
+			// Process each frame
+			for (int i1 = 0; i1 < frames.size(); ++i1) {
+				if (i1 >= j1) {
+					throw new RuntimeException("invalid frameindex " + i1);
+				}
+				this.allocateFrameTextureData(i1);
+				this.framesTextureData.set(i1, getFrameTextureData(aint, k1, l, i1));
+			}
+
+			// Create animation metadata with default values
+			this.animationMetadata = new AnimationMetadataSection(frames, this.width, this.height, 1, false);
 		}
 
 	}
@@ -294,28 +316,27 @@ public class EaglerTextureAtlasSprite {
 			final int[][] aint = this.framesTextureData.get(i);
 			if (aint != null) {
 				try {
-					arraylist.add(TextureUtil.generateMipmapData(level, this.width, aint));
+					arraylist.add(TextureUtil.generateMipmapData(level, this.width, new int[][][]{aint}));
 				} catch (Throwable throwable) {
-					CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Generating mipmaps for frame");
-					CrashReportCategory crashreportcategory = crashreport.makeCategory("Frame being iterated");
-					crashreportcategory.addCrashSection("Frame index", Integer.valueOf(i));
-					crashreportcategory.addCrashSectionCallable("Frame sizes", new Callable<String>() {
-						public String call() throws Exception {
+					CrashReport crashreport = new CrashReport("Generating mipmaps for frame", throwable);
+					CrashReportCategory crashreportcategory = crashreport.addCategory("Frame being iterated");
+					crashreportcategory.setDetail("Frame index", i);
+					crashreportcategory.setDetail("Frame sizes", new Callable<String>() {
+						public String call() {
 							StringBuilder stringbuilder = new StringBuilder();
 
-							for (int j = 0; j < aint.length; ++j) {
-								int[] aint1 = aint[j];
+							for (int[] aint1 : aint) {
 								if (stringbuilder.length() > 0) {
 									stringbuilder.append(", ");
 								}
 
-								stringbuilder.append(aint1 == null ? "null" : Integer.valueOf(aint1.length));
+								stringbuilder.append(aint1 == null ? "(null)" : aint1.length);
 							}
 
 							return stringbuilder.toString();
 						}
 					});
-					throw new ReportedException(crashreport);
+					throw new RuntimeException(crashreport.getFriendlyReport());
 				}
 			}
 		}
@@ -440,5 +461,10 @@ public class EaglerTextureAtlasSprite {
 	public double getSpriteV16(float p_getSpriteV16_1_) {
 		float f = this.maxV - this.minV;
 		return (double) ((p_getSpriteV16_1_ - this.minV) / f * 16.0F);
+	}
+
+	private static class CounterInt {
+	    private int value = 0;
+	    public int nextValue() { return value++; }
 	}
 }

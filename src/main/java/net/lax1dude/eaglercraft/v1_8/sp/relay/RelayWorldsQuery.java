@@ -29,7 +29,7 @@ public interface RelayWorldsQuery {
 	RelayQuery.RateLimit isQueryRateLimit();
 	void close();
 	
-	List<RelayPacket07LocalWorlds.LocalWorld> getWorlds();
+	List<RelayPacket07LocalWorlds.LocalWorld> getLevels();
 	
 	VersionMismatch getCompatible();
 	

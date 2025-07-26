@@ -1,6 +1,6 @@
 {
-    "parent": "block/cross",
-    "textures": {
-        "cross": "blocks/sapling_jungle"
-    }
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "minecraft:block/jungle_sapling"
+  }
 }

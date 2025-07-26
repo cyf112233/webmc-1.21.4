@@ -1,5 +1,7 @@
 {
-    "variants": {
-        "normal": { "model": "mossy_cobblestone" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/mossy_cobblestone"
     }
+  }
 }

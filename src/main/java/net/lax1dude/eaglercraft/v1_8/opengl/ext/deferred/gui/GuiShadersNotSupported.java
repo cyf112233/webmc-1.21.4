@@ -16,35 +16,35 @@
 
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.gui;
 
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 
-public class GuiShadersNotSupported extends GuiScreen {
+public class GuiShadersNotSupported extends Screen {
 
-	private GuiScreen parent;
+	private Screen parent;
 	private String reason;
 
-	public GuiShadersNotSupported(GuiScreen parent, String reason) {
+	public GuiShadersNotSupported(Screen parent, String reason) {
 		this.parent = parent;
 		this.reason = reason;
 	}
 
 	public void initGui() {
 		this.buttonList.clear();
-		this.buttonList.add(new GuiButton(0, width / 2 - 100, height / 2 + 10, I18n.format("gui.back")));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(0, width / 2 - 100, height / 2 + 10, I18n.get("gui.back")));
 	}
 
 	public void drawScreen(int i, int j, float var3) {
 		this.drawBackground(0);
-		drawCenteredString(fontRendererObj, I18n.format("shaders.gui.unsupported.title"), width / 2, height / 2 - 30, 0xFFFFFF);
+		drawCenteredString(fontRendererObj, I18n.get("shaders.gui.unsupported.title"), width / 2, height / 2 - 30, 0xFFFFFF);
 		drawCenteredString(fontRendererObj, reason, width / 2, height / 2 - 10, 11184810);
 		super.drawScreen(i, j, var3);
 	}
 
-	protected void actionPerformed(GuiButton parGuiButton) {
-		if(parGuiButton.id == 0) {
-			mc.displayGuiScreen(parent);
+	protected void actionPerformed(net.minecraft.client.gui.components.Button parButton) {
+		if(parButton.id == 0) {
+			mc.displayScreen(parent);
 		}
 	}
 

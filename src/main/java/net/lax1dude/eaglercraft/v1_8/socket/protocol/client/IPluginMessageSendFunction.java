@@ -16,10 +16,10 @@
 
 package net.lax1dude.eaglercraft.v1_8.socket.protocol.client;
 
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 public interface IPluginMessageSendFunction {
 
-	void sendPluginMessage(String channel, PacketBuffer contents);
+	void sendPluginMessage(String channel, FriendlyByteBuf contents);
 
 }

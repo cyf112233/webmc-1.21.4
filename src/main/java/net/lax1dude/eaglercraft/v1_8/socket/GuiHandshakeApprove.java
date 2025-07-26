@@ -19,34 +19,34 @@ package net.lax1dude.eaglercraft.v1_8.socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 
-public class GuiHandshakeApprove extends GuiScreen {
+public class GuiHandshakeApprove extends Screen {
 
 	protected String message;
-	protected GuiScreen no;
-	protected GuiScreen yes;
+	protected Screen no;
+	protected Screen yes;
 
 	protected String titleString;
 	protected List<String> bodyLines;
 
 	protected int bodyY;
 
-	public GuiHandshakeApprove(String message, GuiScreen no, GuiScreen yes) {
+	public GuiHandshakeApprove(String message, Screen no, Screen yes) {
 		this.message = message;
 		this.no = no;
 		this.yes = yes;
 	}
 
-	public GuiHandshakeApprove(String message, GuiScreen back) {
+	public GuiHandshakeApprove(String message, Screen back) {
 		this(message, back, null);
 	}
 
 	public void initGui() {
 		this.buttonList.clear();
-		titleString = I18n.format("handshakeApprove." + message + ".title");
+		titleString = I18n.get("handshakeApprove." + message + ".title");
 		bodyLines = new ArrayList<>();
 		int i = 0;
 		boolean wasNull = true;
@@ -68,18 +68,18 @@ public class GuiHandshakeApprove extends GuiScreen {
 		bodyY = (height - totalHeight) / 2 - 15;
 		int buttonY = bodyY + totalHeight - 20;
 		if(yes != null) {
-			this.buttonList.add(new GuiButton(0, width / 2 + 3, buttonY, 100, 20, I18n.format("gui.no")));
-			this.buttonList.add(new GuiButton(1, width / 2 - 103, buttonY, 100, 20, I18n.format("gui.yes")));
+			this.buttonList.add(new net.minecraft.client.gui.components.Button(0, width / 2 + 3, buttonY, 100, 20, I18n.get("gui.no")));
+			this.buttonList.add(new net.minecraft.client.gui.components.Button(1, width / 2 - 103, buttonY, 100, 20, I18n.get("gui.yes")));
 		}else {
-			this.buttonList.add(new GuiButton(0, width / 2 - 100, buttonY, 200, 20, I18n.format("gui.back")));
+			this.buttonList.add(new net.minecraft.client.gui.components.Button(0, width / 2 - 100, buttonY, 200, 20, I18n.get("gui.back")));
 		}
 	}
 
-	protected void actionPerformed(GuiButton parGuiButton) {
-		if(parGuiButton.id == 0) {
-			mc.displayGuiScreen(no);
-		}else if(parGuiButton.id == 1) {
-			mc.displayGuiScreen(yes);
+	protected void actionPerformed(net.minecraft.client.gui.components.Button parButton) {
+		if(parButton.id == 0) {
+			mc.displayScreen(no);
+		}else if(parButton.id == 1) {
+			mc.displayScreen(yes);
 		}
 	}
 
@@ -96,7 +96,7 @@ public class GuiHandshakeApprove extends GuiScreen {
 	}
 
 	private String getI18nOrNull(String key) {
-		String ret = I18n.format(key);
+		String ret = I18n.get(key);
 		if(key.equals(ret)) {
 			return null;
 		}else {

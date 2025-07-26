@@ -20,21 +20,21 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.GamePacketOutputBuffer;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 public class PacketBufferOutputWrapper implements GamePacketOutputBuffer {
 
-	protected PacketBuffer buffer;
+	protected FriendlyByteBuf buffer;
 
-	public PacketBufferOutputWrapper(PacketBuffer buffer) {
+	public PacketBufferOutputWrapper(FriendlyByteBuf buffer) {
 		this.buffer = buffer;
 	}
 
-	public PacketBuffer getBuffer() {
+	public FriendlyByteBuf getBuffer() {
 		return buffer;
 	}
 
-	public void setBuffer(PacketBuffer buffer) {
+	public void setBuffer(FriendlyByteBuf buffer) {
 		this.buffer = buffer;
 	}
 

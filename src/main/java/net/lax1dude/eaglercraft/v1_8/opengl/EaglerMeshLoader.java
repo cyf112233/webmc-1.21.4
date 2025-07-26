@@ -29,27 +29,35 @@ import net.lax1dude.eaglercraft.v1_8.internal.buffer.IntBuffer;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.resources.ResourceLocation;
 
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
 
-public class EaglerMeshLoader implements IResourceManagerReloadListener {
+public class EaglerMeshLoader extends SimplePreparableReloadListener<Void> {
+	private static final EaglerMeshLoader INSTANCE = new EaglerMeshLoader();
+
+	public static EaglerMeshLoader getInstance() {
+		return INSTANCE;
+	}
+
+	private EaglerMeshLoader() {
+	}
 
 	private static final Logger logger = LogManager.getLogger("EaglerMeshLoader");
 
 	private static final Map<ResourceLocation, HighPolyMesh> meshCache = new HashMap<>();
 
-	public static HighPolyMesh getEaglerMesh(ResourceLocation meshLoc) {
+	public HighPolyMesh getEaglerMesh(ResourceLocation meshLoc) {
 		if(meshLoc.cachedPointerType == ResourceLocation.CACHED_POINTER_EAGLER_MESH) {
 			return (HighPolyMesh)meshLoc.cachedPointer;
 		}
 		HighPolyMesh theMesh = meshCache.get(meshLoc);
 		if(theMesh == null) {
 			theMesh = new HighPolyMesh();
-			reloadMesh(meshLoc, theMesh, Minecraft.getMinecraft().getResourceManager());
+			reloadMesh(meshLoc, theMesh, Minecraft.getInstance().getResourceManager());
 			meshCache.put(meshLoc, theMesh);
 		}
 		meshLoc.cachedPointerType = ResourceLocation.CACHED_POINTER_EAGLER_MESH;
@@ -57,7 +65,7 @@ public class EaglerMeshLoader implements IResourceManagerReloadListener {
 		return theMesh;
 	}
 
-	private static void reloadMesh(ResourceLocation meshLoc, HighPolyMesh meshStruct, IResourceManager resourceManager) {
+	private static void reloadMesh(ResourceLocation meshLoc, HighPolyMesh meshStruct, ResourceManager resourceManager) {
 		IntBuffer up1 = null;
 		try {
 			int intsOfVertex, intsOfIndex, intsTotal, stride;
@@ -165,10 +173,20 @@ public class EaglerMeshLoader implements IResourceManagerReloadListener {
 	}
 
 	@Override
-	public void onResourceManagerReload(IResourceManager var1) {
+	protected Void prepare(ResourceManager resourceManager, net.minecraft.util.profiling.ProfilerFiller profiler) {
+		return null;
+	}
+
+	@Override
+	protected void apply(Void prepared, ResourceManager resourceManager, net.minecraft.util.profiling.ProfilerFiller profiler) {
 		for(Entry<ResourceLocation, HighPolyMesh> meshEntry : meshCache.entrySet()) {
-			reloadMesh(meshEntry.getKey(), meshEntry.getValue(), var1);
+			reloadMesh(meshEntry.getKey(), meshEntry.getValue(), resourceManager);
 		}
+	}
+
+	public void register() {
+		net.minecraft.server.packs.resources.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
+			.registerReloadListener(this);
 	}
 
 }

@@ -27,10 +27,10 @@ import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
 import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
 import net.lax1dude.eaglercraft.v1_8.HString;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
 
 public class EaglerProfile {
 
@@ -333,9 +333,9 @@ public class EaglerProfile {
 			return;
 		}
 
-		NBTTagCompound profile;
+		CompoundTag profile;
 		try {
-			profile = CompressedStreamTools.readCompressed(new EaglerInputStream(profileStorage));
+			profile = NbtIo.readCompressed(new EaglerInputStream(profileStorage));
 		}catch(IOException ex) {
 			return;
 		}
@@ -358,9 +358,9 @@ public class EaglerProfile {
 
 		clearCustomSkins();
 
-		NBTTagList skinsList = profile.getTagList("skins", 10);
+		ListTag skinsList = profile.getTagList("skins", 10);
 		for(int i = 0, l = skinsList.tagCount(); i < l; ++i) {
-			NBTTagCompound skin = skinsList.getCompoundTagAt(i);
+			CompoundTag skin = skinsList.getCompoundTagAt(i);
 			String skinName = skin.getString("name");
 			byte[] skinData = skin.getByteArray("data");
 			if(skinData.length != 16384) continue;
@@ -377,9 +377,9 @@ public class EaglerProfile {
 
 		if(profile.hasKey("capes", 9)) {
 			clearCustomCapes();
-			NBTTagList capesList = profile.getTagList("capes", 10);
+			ListTag capesList = profile.getTagList("capes", 10);
 			for(int i = 0, l = capesList.tagCount(); i < l; ++i) {
-				NBTTagCompound cape = capesList.getCompoundTagAt(i);
+				CompoundTag cape = capesList.getCompoundTagAt(i);
 				String capeName = cape.getString("name");
 				byte[] capeData = cape.getByteArray("data");
 				if(capeData.length != 1173) continue;
@@ -416,26 +416,26 @@ public class EaglerProfile {
 	}
 
 	public static byte[] write() {
-		NBTTagCompound profile = new NBTTagCompound();
+		CompoundTag profile = new CompoundTag();
 		profile.setInteger("presetSkin", presetSkinId);
 		profile.setInteger("customSkin", customSkinId);
 		profile.setInteger("presetCape", presetCapeId);
 		profile.setInteger("customCape", customCapeId);
 		profile.setString("username", username);
-		NBTTagList skinsList = new NBTTagList();
+		ListTag skinsList = new ListTag();
 		for(int i = 0, l = customSkins.size(); i < l; ++i) {
 			CustomSkin sk = customSkins.get(i);
-			NBTTagCompound skin = new NBTTagCompound();
+			CompoundTag skin = new CompoundTag();
 			skin.setString("name", sk.name);
 			skin.setByteArray("data", sk.texture);
 			skin.setByte("model", (byte)sk.model.id);
 			skinsList.appendTag(skin);
 		}
 		profile.setTag("skins", skinsList);
-		NBTTagList capesList = new NBTTagList();
+		ListTag capesList = new ListTag();
 		for(int i = 0, l = customCapes.size(); i < l; ++i) {
 			CustomCape cp = customCapes.get(i);
-			NBTTagCompound cape = new NBTTagCompound();
+			CompoundTag cape = new CompoundTag();
 			cape.setString("name", cp.name);
 			cape.setByteArray("data", cp.texture);
 			capesList.appendTag(cape);
@@ -443,7 +443,7 @@ public class EaglerProfile {
 		profile.setTag("capes", capesList);
 		EaglerOutputStream bao = new EaglerOutputStream();
 		try {
-			CompressedStreamTools.writeCompressed(profile, bao);
+			NbtIo.writeCompressed(profile, bao);
 		} catch (IOException e) {
 			return null;
 		}

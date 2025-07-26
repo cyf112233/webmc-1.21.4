@@ -29,8 +29,9 @@ import net.lax1dude.eaglercraft.v1_8.profile.EaglerSkinTexture;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketCustomizePauseMenuV4EAG;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.util.PacketImageData;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class PauseMenuCustomizeState {
 
@@ -205,7 +206,7 @@ public class PauseMenuCustomizeState {
 		}
 		PacketImageData data = sourceData.get(ii);
 		ret = new PauseMenuSprite(new EaglerSkinTexture(ImageData.swapRB(data.rgba), data.width, data.height));
-		Minecraft.getMinecraft().getTextureManager().loadTexture(ret.loc, ret.tex);
+		Minecraft.getInstance().getTextureManager().register(ret.loc, ret.tex);
 		spriteCache.put(i, ret);
 		toFree.add(ret);
 		aspectCB.accept((float)data.width / data.height);
@@ -213,7 +214,7 @@ public class PauseMenuCustomizeState {
 	}
 
 	private static ResourceLocation newLoc() {
-		return new ResourceLocation("eagler:gui/server/custom_pause_menu/tex_" + textureId++);
+		return ResourceLocation.fromNamespaceAndPath("eagler", "gui/server/custom_pause_menu/tex_" + textureId++);
 	}
 
 	public static void reset() {
@@ -247,9 +248,9 @@ public class PauseMenuCustomizeState {
 		discordButtonText = null;
 		discordInviteURL = null;
 		if(!toFree.isEmpty()) {
-			TextureManager mgr = Minecraft.getMinecraft().getTextureManager();
+			TextureManager mgr = Minecraft.getInstance().getTextureManager();
 			for(PauseMenuSprite rc : toFree) {
-				mgr.deleteTexture(rc.loc);
+				mgr.release(rc.loc);
 			}
 			toFree.clear();
 		}

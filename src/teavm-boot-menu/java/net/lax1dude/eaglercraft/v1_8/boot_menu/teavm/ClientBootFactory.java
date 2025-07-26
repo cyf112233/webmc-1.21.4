@@ -43,10 +43,10 @@ import net.lax1dude.eaglercraft.v1_8.internal.teavm.TeaVMBlobURLHandle;
 import net.lax1dude.eaglercraft.v1_8.internal.teavm.TeaVMBlobURLManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTException;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.nbt.NbtAccounter;
 
 public class ClientBootFactory {
 
@@ -482,17 +482,17 @@ public class ClientBootFactory {
 		if(!opts.startsWith("[NBT]") || !opts.endsWith("[/NBT]")) {
 			throw new IllegalArgumentException("Eaglercraft opts are not in NBT format!");
 		}
-		NBTTagCompound readTag;
+		CompoundTag readTag;
 		try {
-			readTag = JsonToNBT.getTagFromJson(opts.substring(5, opts.length() - 6).trim());
-		} catch (NBTException e) {
+			readTag = TagParser.parseTag(opts.substring(5, opts.length() - 6).trim());
+		} catch (Exception e) {
 			throw new IllegalArgumentException("Eaglercraft opts are invalid: " + e.getMessage());
 		}
 		EaglerOutputStream bao = new EaglerOutputStream(256);
-		try {
-			CompressedStreamTools.write(readTag, new DataOutputStream(bao));
+		try (DataOutputStream dos = new DataOutputStream(bao)) {
+			NbtIo.write(readTag, dos);
 		} catch (IOException e) {
-			throw new RuntimeException("Could not write NBT tag compound!");
+			throw new RuntimeException("Could not write NBT tag compound!", e);
 		}
 		return Base64.encodeBase64String(bao.toByteArray());
 	}

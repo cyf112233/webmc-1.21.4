@@ -27,8 +27,8 @@ import java.util.List;
 
 import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
 import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.CompoundTag;
 
 public class IPCPacket16NBTList implements IPCPacketBase {
 
@@ -38,25 +38,25 @@ public class IPCPacket16NBTList implements IPCPacketBase {
 
 	public int opCode;
 	public final List<byte[]> tagList;
-	public final List<NBTTagCompound> nbtTagList;
+	public final List<CompoundTag> nbtTagList;
 	
 	public IPCPacket16NBTList() {
 		tagList = new LinkedList<>();
 		nbtTagList = new LinkedList<>();
 	}
 	
-	public IPCPacket16NBTList(int opcode, NBTTagCompound[] list) {
+	public IPCPacket16NBTList(int opcode, CompoundTag[] list) {
 		this(opcode, Arrays.asList(list));
 	}
 	
-	public IPCPacket16NBTList(int opcode, List<NBTTagCompound> list) {
+	public IPCPacket16NBTList(int opcode, List<CompoundTag> list) {
 		tagList = new LinkedList<>();
 		nbtTagList = list;
 		for(int i = 0, size = list.size(); i < size; ++i) {
-			NBTTagCompound tag = list.get(i);
+			CompoundTag tag = list.get(i);
 			try {
 				EaglerOutputStream bao = new EaglerOutputStream();
-				CompressedStreamTools.write(tag, new DataOutputStream(bao));
+				NbtIo.write(tag, new DataOutputStream(bao));
 				tagList.add(bao.toByteArray());
 			}catch(IOException e) {
 				System.err.println("Failed to write tag '" + tag.getId() + "' (#" + i + ") in IPCPacket16NBTList");
@@ -76,7 +76,7 @@ public class IPCPacket16NBTList implements IPCPacketBase {
 			bin.readFully(toRead);
 			tagList.add(toRead);
 			try {
-				nbtTagList.add(CompressedStreamTools.read(new DataInputStream(new EaglerInputStream(toRead))));
+				nbtTagList.add(NbtIo.read(new DataInputStream(new EaglerInputStream(toRead))));
 			}catch(IOException e) {
 				System.err.println("Failed to read tag #" + i + " in IPCPacket16NBTList");
 			}

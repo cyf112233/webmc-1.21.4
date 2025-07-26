@@ -33,21 +33,21 @@ import net.lax1dude.eaglercraft.v1_8.voice.VoiceClientController;
 import net.lax1dude.eaglercraft.v1_8.webview.ServerInfoCache;
 import net.lax1dude.eaglercraft.v1_8.webview.WebViewOverlayController;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 
 public class ClientV4MessageHandler implements GameMessageHandler {
 
-	private final NetHandlerPlayClient netHandler;
+	private final ClientPacketListener netHandler;
 
-	public ClientV4MessageHandler(NetHandlerPlayClient netHandler) {
+	public ClientV4MessageHandler(ClientPacketListener netHandler) {
 		this.netHandler = netHandler;
 	}
 
 	public void handleServer(SPacketEnableFNAWSkinsEAG packet) {
 		netHandler.currentFNAWSkinAllowedState = packet.enableSkins;
 		netHandler.currentFNAWSkinForcedState = packet.force;
-		Minecraft.getMinecraft().getRenderManager().setEnableFNAWSkins(netHandler.currentFNAWSkinForcedState
-				|| (netHandler.currentFNAWSkinAllowedState && Minecraft.getMinecraft().gameSettings.enableFNAWSkins));
+		Minecraft.getInstance().getEntityRenderDispatcher().setEnableFNAWSkins(netHandler.currentFNAWSkinForcedState
+				|| (netHandler.currentFNAWSkinAllowedState && Minecraft.getInstance().options.enableFNAWSkins()));
 	}
 
 	public void handleServer(SPacketOtherCapeCustomEAG packet) {

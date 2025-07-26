@@ -16,8 +16,8 @@
 
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
 
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.world.entity.Entity;
 
 public abstract class ShadersRenderPassFuture {
 
@@ -50,9 +50,9 @@ public abstract class ShadersRenderPassFuture {
 	}
 
 	public ShadersRenderPassFuture(Entity e, float partialTicks) {
-		this.x = (float)((e.posX - e.prevPosX) * partialTicks + e.prevPosX - TileEntityRendererDispatcher.staticPlayerX);
-		this.y = (float)((e.posY - e.prevPosY) * partialTicks + e.prevPosY - TileEntityRendererDispatcher.staticPlayerY);
-		this.z = (float)((e.posZ - e.prevPosZ) * partialTicks + e.prevPosZ - TileEntityRendererDispatcher.staticPlayerZ);
+		this.x = (float)((e.getX() - e.prevPosX) * partialTicks + e.prevPosX - BlockEntityRenderDispatcher.camera.getPosition().x);
+		this.y = (float)((e.getY() - e.prevPosY) * partialTicks + e.prevPosY - BlockEntityRenderDispatcher.camera.getPosition().y);
+		this.z = (float)((e.getZ() - e.prevPosZ) * partialTicks + e.prevPosZ - BlockEntityRenderDispatcher.camera.getPosition().z);
 	}
 
 	public ShadersRenderPassFuture(Entity e) {

@@ -16,18 +16,55 @@
 
 package net.lax1dude.eaglercraft.v1_8.sp;
 
-import net.minecraft.world.storage.SaveHandlerMP;
-import net.minecraft.world.storage.WorldInfo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.dimension.LevelStem;
+import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess;
+import net.minecraft.world.level.storage.PlayerDataStorage;
+import net.minecraft.world.level.storage.ServerLevelData;
 
-public class SingleplayerSaveHandler extends SaveHandlerMP {
+public class SingleplayerSaveHandler {
 
-	private final WorldInfo worldInfo;
+    private final ServerLevelData worldInfo;
+    private final LevelStorageAccess levelStorageAccess;
+    private final PlayerDataStorage playerDataStorage;
 
-	public SingleplayerSaveHandler(WorldInfo worldInfo) {
-		this.worldInfo = worldInfo;
-	}
+    public SingleplayerSaveHandler(ServerLevelData worldInfo, LevelStorageAccess levelStorageAccess) {
+        this.worldInfo = worldInfo;
+        this.levelStorageAccess = levelStorageAccess;
+        this.playerDataStorage = new PlayerDataStorage(levelStorageAccess);
+    }
 
-	public WorldInfo loadWorldInfo() {
-		return worldInfo;
-	}
+    public ServerLevelData loadLevelData() {
+        return worldInfo;
+    }
+
+    public PlayerDataStorage getPlayerDataStorage() {
+        return playerDataStorage;
+    }
+
+    public LevelStorageAccess getLevelStorageAccess() {
+        return levelStorageAccess;
+    }
+
+    public static ServerLevelData createDefaultLevelData(LevelSettings settings, String levelName) {
+        CompoundTag compoundnbt = new CompoundTag();
+        CompoundTag compoundnbt1 = new CompoundTag();
+        compoundnbt1.putString("generatorName", "flat");
+        compoundnbt1.putString("generatorOptions", "{}");
+        compoundnbt1.putString("levelType", "default_1_1");
+        compoundnbt.put("GameRules", new GameRules().createTag());
+        ServerLevelData serverleveldata = new ServerLevelData();
+        serverleveldata.setDifficulty(Difficulty.NORMAL);
+        serverleveldata.setDifficultyLocked(false);
+        serverleveldata.setGameType(GameType.SURVIVAL);
+        serverleveldata.setLevelName(levelName);
+        serverleveldata.setSpawn(0, 64, 0, 0.0F);
+        serverleveldata.setGameRules(new GameRules());
+        return serverleveldata;
+    }
 }

@@ -30,7 +30,7 @@ import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.ArrayListSerial;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.EaglerDeferredPipeline;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.ListSerial;
-import net.minecraft.util.MathHelper;
+import net.minecraft.util.Mth;
 
 public class DynamicLightBucketLoader {
 
@@ -70,7 +70,7 @@ public class DynamicLightBucketLoader {
 		destroy();
 		
 		int alignment = EaglercraftGPU.getUniformBufferOffsetAlignment();
-		lightingBufferSliceLength = MathHelper.ceiling_float_int((float)LIGHTING_BUFFER_LENGTH / (float)alignment) * alignment;
+		lightingBufferSliceLength = Mth.ceiling_float_int((float)LIGHTING_BUFFER_LENGTH / (float)alignment) * alignment;
 		
 		chunkLightingDataCopyBuffer = EagRuntime.allocateByteBuffer(LIGHTING_BUFFER_LENGTH);
 		for(int i = 0; i < LIGHTING_BUFFER_LENGTH; i += 4) {
@@ -130,9 +130,9 @@ public class DynamicLightBucketLoader {
 					chunkLightingDataCopyBuffer.putInt(0); //padding
 					for(int i = 0; i < max; ++i) {
 						DynamicLightInstance dl = currentLightSourceBucket.get(i);
-						chunkLightingDataCopyBuffer.putFloat((float)(dl.posX - currentRenderX));
-						chunkLightingDataCopyBuffer.putFloat((float)(dl.posY - currentRenderY));
-						chunkLightingDataCopyBuffer.putFloat((float)(dl.posZ - currentRenderZ));
+						chunkLightingDataCopyBuffer.putFloat((float)(dl.getX() - currentRenderX));
+						chunkLightingDataCopyBuffer.putFloat((float)(dl.getY() - currentRenderY));
+						chunkLightingDataCopyBuffer.putFloat((float)(dl.getZ() - currentRenderZ));
 						chunkLightingDataCopyBuffer.putFloat(dl.radius);
 					}
 					chunkLightingDataCopyBuffer.flip();
@@ -174,9 +174,9 @@ public class DynamicLightBucketLoader {
 	}
 
 	public void bucketLightSource(float x, float y, float z, DynamicLightInstance dl) {
-		int bucketX = MathHelper.floor_float(x / 16.0f);
-		int bucketY = MathHelper.floor_float(y / 16.0f);
-		int bucketZ = MathHelper.floor_float(z / 16.0f);
+		int bucketX = Mth.floor_float(x / 16.0f);
+		int bucketY = Mth.floor_float(y / 16.0f);
+		int bucketZ = Mth.floor_float(z / 16.0f);
 		addLightSourceToBucket(bucketX, bucketY, bucketZ, dl);
 		int minX = bucketX, maxX = bucketX;
 		int minY = bucketY, maxY = bucketY;

@@ -33,25 +33,25 @@ import net.lax1dude.eaglercraft.v1_8.netty.Unpooled;
 import net.lax1dude.eaglercraft.v1_8.socket.CompressionNotSupportedException;
 import net.lax1dude.eaglercraft.v1_8.sp.SingleplayerServerController;
 import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerIntegratedServerWorker;
-import net.minecraft.network.EnumConnectionState;
-import net.minecraft.network.EnumPacketDirection;
-import net.minecraft.network.INetHandler;
-import net.minecraft.network.Packet;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.IChatComponent;
-import net.minecraft.util.ITickable;
+import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.PacketListener;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.lax1dude.eaglercraft.v1_8.sp.server.internal.ServerPlatformSingleplayer;
 
 public class IntegratedServerPlayerNetworkManager {
 
-	private INetHandler nethandler = null;
+	private PacketListener nethandler = null;
 	public final String playerChannel;
-	private EnumConnectionState packetState = EnumConnectionState.HANDSHAKING;
-	private static PacketBuffer temporaryBuffer;
+	private ConnectionProtocol packetState = ConnectionProtocol.HANDSHAKING;
+	private static FriendlyByteBuf temporaryBuffer;
 	private static byte[] compressedPacketTmp;
 	private int debugPacketCounter = 0;
-	private final List<byte[]> recievedPacketBuffer = new LinkedList<>();
+	private final List<byte[]> recievedFriendlyByteBuf = new LinkedList<>();
 	private final boolean enableSendCompression;
 
 	private boolean firstPacket = true;
@@ -61,11 +61,11 @@ public class IntegratedServerPlayerNetworkManager {
 	public static final int fragmentSize = 0xFF00;
 	public static final int compressionThreshold = 1024;
 	
-	public static final Logger logger = LogManager.getLogger("NetworkManager");
+	public static final Logger logger = LogManager.getLogger("Connection");
 
 	public IntegratedServerPlayerNetworkManager(String playerChannel) {
 		if(temporaryBuffer == null) {
-			temporaryBuffer = new PacketBuffer(Unpooled.buffer(0x1FFFF));
+			temporaryBuffer = new FriendlyByteBuf(Unpooled.buffer(0x1FFFF));
 		}
 		this.playerChannel = playerChannel;
 		this.enableSendCompression = !SingleplayerServerController.PLAYER_CHANNEL.equals(playerChannel);
@@ -80,26 +80,26 @@ public class IntegratedServerPlayerNetworkManager {
 		return EaglerIntegratedServerWorker.getChannelExists(playerChannel) ? EnumEaglerConnectionState.CONNECTED : EnumEaglerConnectionState.CLOSED;
 	}
 	
-	public void closeChannel(IChatComponent reason) {
+	public void closeChannel(Component reason) {
 		EaglerIntegratedServerWorker.closeChannel(playerChannel);
 		if(nethandler != null) {
 			nethandler.onDisconnect(reason);
 		}
 	}
 	
-	public void setConnectionState(EnumConnectionState state) {
+	public void setConnectionState(ConnectionProtocol state) {
 		packetState = state;
 	}
 
 	public void addRecievedPacket(byte[] next) {
-		recievedPacketBuffer.add(next);
+		recievedFriendlyByteBuf.add(next);
 	}
 
 	public void processReceivedPackets() {
 		if(nethandler == null) return;
 
-		while(!recievedPacketBuffer.isEmpty()) {
-			byte[] data = recievedPacketBuffer.remove(0);
+		while(!recievedFriendlyByteBuf.isEmpty()) {
+			byte[] data = recievedFriendlyByteBuf.remove(0);
 			byte[] fullData;
 
 			if(enableSendCompression) {
@@ -120,7 +120,7 @@ public class IntegratedServerPlayerNetworkManager {
 							throw new RuntimeException(ex);
 						}
 						ServerPlatformSingleplayer.sendPacket(new IPCPacketData(playerChannel, kickPacketBAO.toByteArray()));
-						closeChannel(new ChatComponentText("Recieved unsuppoorted connection from an Eaglercraft 1.5.2 client!"));
+						closeChannel(new Component("Recieved unsuppoorted connection from an Eaglercraft 1.5.2 client!"));
 						firstPacket = false;
 						return;
 					}
@@ -162,12 +162,12 @@ public class IntegratedServerPlayerNetworkManager {
 			try {
 				ByteBuf nettyBuffer = Unpooled.buffer(fullData, fullData.length);
 				nettyBuffer.writerIndex(fullData.length);
-				PacketBuffer input = new PacketBuffer(nettyBuffer);
+				FriendlyByteBuf input = new FriendlyByteBuf(nettyBuffer);
 				int pktId = input.readVarIntFromBuffer();
 				
 				Packet pkt;
 				try {
-					pkt = packetState.getPacket(EnumPacketDirection.SERVERBOUND, pktId);
+					pkt = packetState.getPacket(PacketFlow.SERVERBOUND, pktId);
 				}catch(IllegalAccessException | InstantiationException ex) {
 					throw new IOException("Recieved a packet with type " + pktId + " which is invalid!");
 				}
@@ -203,7 +203,7 @@ public class IntegratedServerPlayerNetworkManager {
 		
 		int i;
 		try {
-			i = packetState.getPacketId(EnumPacketDirection.CLIENTBOUND, pkt);
+			i = packetState.getPacketId(PacketFlow.CLIENTBOUND, pkt);
 		}catch(Throwable t) {
 			logger.error("Incorrect packet for state: {}", pkt.getClass().getSimpleName());
 			return;
@@ -274,7 +274,7 @@ public class IntegratedServerPlayerNetworkManager {
 		}
 	}
 	
-	public void setNetHandler(INetHandler nethandler) {
+	public void setNetHandler(PacketListener nethandler) {
 		this.nethandler = nethandler;
 	}
 	
@@ -296,8 +296,8 @@ public class IntegratedServerPlayerNetworkManager {
 
 	public void tick() {
 		processReceivedPackets();
-		if(nethandler instanceof ITickable) {
-			((ITickable)nethandler).update();
+		if(nethandler instanceof BlockEntityTicker) {
+			((BlockEntityTicker)nethandler).update();
 		}
 	}
 }

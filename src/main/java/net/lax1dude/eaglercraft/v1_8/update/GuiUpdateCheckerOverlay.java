@@ -19,13 +19,13 @@ package net.lax1dude.eaglercraft.v1_8.update;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.sp.lan.LANServerController;
-import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.resources.ResourceLocation;
 
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 
@@ -45,14 +45,14 @@ public class GuiUpdateCheckerOverlay extends Gui {
 	private int totalHeightOffset = 0;
 
 	private boolean isIngame;
-	private GuiScreen backScreen;
+	private Screen backScreen;
 
-	private GuiButton checkForUpdatesButton;
-	private GuiButton startDownloadButton;
-	private GuiButton viewAllUpdatesButton;
-	private GuiButton dismissUpdatesButton;
+	private net.minecraft.client.gui.components.Button checkForUpdatesButton;
+	private net.minecraft.client.gui.components.Button startDownloadButton;
+	private net.minecraft.client.gui.components.Button viewAllUpdatesButton;
+	private net.minecraft.client.gui.components.Button dismissUpdatesButton;
 
-	public GuiUpdateCheckerOverlay(boolean isIngame, GuiScreen screen) {
+	public GuiUpdateCheckerOverlay(boolean isIngame, Screen screen) {
 		this.isIngame = isIngame;
 		this.backScreen = screen;
 	}
@@ -61,13 +61,13 @@ public class GuiUpdateCheckerOverlay extends Gui {
 		if(!UpdateService.supported()) {
 			return;
 		}
-		this.mc = mc;
+		this.minecraft = mc;
 		this.width = w;
 		this.height = h;
-		checkForUpdatesButton = new GuiButton(0, 0, 0, 150, 20, I18n.format("update.button") + " " + I18n.format(mc.gameSettings.enableUpdateSvc ? "gui.yes" : "gui.no"));
-		startDownloadButton = new GuiButton(1, 1, 0, 115, 20, I18n.format("update.startDownload"));
-		viewAllUpdatesButton = new GuiButton(2, 1, 0, 115, 20, I18n.format("update.viewAll", 0));
-		dismissUpdatesButton = new GuiButton(3, 1, 0, 115, 20, I18n.format("update.dismiss"));
+		checkForUpdatesButton = new net.minecraft.client.gui.components.Button(0, 0, 0, 150, 20, I18n.get("update.button") + " " + I18n.get(mc.options.enableUpdateSvc ? "gui.yes" : "gui.no"));
+		startDownloadButton = new net.minecraft.client.gui.components.Button(1, 1, 0, 115, 20, I18n.get("update.startDownload"));
+		viewAllUpdatesButton = new net.minecraft.client.gui.components.Button(2, 1, 0, 115, 20, I18n.get("update.viewAll", 0));
+		dismissUpdatesButton = new net.minecraft.client.gui.components.Button(3, 1, 0, 115, 20, I18n.get("update.dismiss"));
 	}
 
 	public void drawScreen(int mx, int my, float partialTicks) {
@@ -90,22 +90,22 @@ public class GuiUpdateCheckerOverlay extends Gui {
 		boolean shownSP = i > 0 || !mc.isSingleplayer() || LANServerController.isHostingLAN();
 		checkForUpdatesButton.visible &= shownSP;
 		
-		if(mc.gameSettings.enableUpdateSvc) {
+		if(mc.options.enableUpdateSvc) {
 			String str;
 			UpdateCertificate cert = UpdateService.getLatestUpdateFound();
 			if(cert != null) {
 				startDownloadButton.visible = true;
 				viewAllUpdatesButton.visible = true;
 				dismissUpdatesButton.visible = true;
-				viewAllUpdatesButton.displayString = I18n.format("update.viewAll", i);
-				str = I18n.format("update.found");
-				mc.fontRendererObj.drawStringWithShadow(str, 3, 22, 0xFFFFAA);
+				viewAllUpdatesButton.displayString = I18n.get("update.viewAll", i);
+				str = I18n.get("update.found");
+				mc.font.drawStringWithShadow(str, 3, 22, 0xFFFFAA);
 				
 				int embedY = 35;
 				int embedWidth = 115;
 				int embedWidth2 = (int)(embedWidth / 0.75f);
 				
-				List<String> lst = cert.bundleVersionComment.length() == 0 ? null : mc.fontRendererObj.listFormattedStringToWidth(cert.bundleVersionComment, embedWidth2 - 14);
+				List<String> lst = cert.bundleVersionComment.length() == 0 ? null : mc.font.listFormattedStringToWidth(cert.bundleVersionComment, embedWidth2 - 14);
 				
 				int embedHeight = 44;
 				if(lst != null) {
@@ -133,16 +133,16 @@ public class GuiUpdateCheckerOverlay extends Gui {
 				EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				GlStateManager.popMatrix();
 	
-				mc.fontRendererObj.drawString(EnumChatFormatting.UNDERLINE + cert.bundleDisplayName, 45, 11, 0x000000);
-				mc.fontRendererObj.drawString(I18n.format("update.update") + " " + EnumChatFormatting.DARK_RED + cert.bundleDisplayVersion, 45, 25, 0x000000);
+				mc.font.drawString(ChatFormatting.UNDERLINE + cert.bundleDisplayName, 45, 11, 0x000000);
+				mc.font.drawString(I18n.get("update.update") + " " + ChatFormatting.DARK_RED + cert.bundleDisplayVersion, 45, 25, 0x000000);
 				
 				if(lst != null) {
 					for(int j = 0, l = lst.size(); j < l; ++j) {
-						mc.fontRendererObj.drawString(lst.get(j), 5, 42 + j * 8, 0x000000);
+						mc.font.drawString(lst.get(j), 5, 42 + j * 8, 0x000000);
 					}
 				}
 				
-				mc.fontRendererObj.drawString(I18n.format("update.author") + " " + cert.bundleAuthorName, 5, 44 + (lst == null ? 0 : (3 + lst.size() * 8)), 0x777777);
+				mc.font.drawString(I18n.get("update.author") + " " + cert.bundleAuthorName, 5, 44 + (lst == null ? 0 : (3 + lst.size() * 8)), 0x777777);
 				
 				startDownloadButton.yPosition = embedHeight + embedY + 5;
 				viewAllUpdatesButton.yPosition = startDownloadButton.yPosition + 22;
@@ -152,12 +152,12 @@ public class GuiUpdateCheckerOverlay extends Gui {
 				GlStateManager.popMatrix();
 			}else if(isIngame) {
 				if(shownSP) {
-					str = I18n.format("update.noneNew");
-					mc.fontRendererObj.drawString(str, 3, 22, 0xDDDDDD);
+					str = I18n.get("update.noneNew");
+					mc.font.drawString(str, 3, 22, 0xDDDDDD);
 					if(i > 0) {
 						viewAllUpdatesButton.yPosition = 40;
 						viewAllUpdatesButton.visible = true;
-						viewAllUpdatesButton.displayString = I18n.format("update.viewAll", i);
+						viewAllUpdatesButton.displayString = I18n.get("update.viewAll", i);
 						totalHeightOffset = 60;
 					}else {
 						totalHeightOffset = 32;
@@ -182,18 +182,18 @@ public class GuiUpdateCheckerOverlay extends Gui {
 		dismissUpdatesButton.visible = false;
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(1.0f, isIngame ? 0.0f : 18.0f, 0.0f);
-		String str = I18n.format("update.downloading");
-		mc.fontRendererObj.drawStringWithShadow(str, 2, 2, 0xFFFFAA);
+		String str = I18n.get("update.downloading");
+		mc.font.drawStringWithShadow(str, 2, 2, 0xFFFFAA);
 		GlStateManager.translate(0.0f, 14.0f, 0.0f);
 		GlStateManager.scale(0.75f, 0.75f, 0.75f);
 		if(!StringUtils.isAllBlank(progressState.statusString1)) {
 			str = progressState.statusString1;
-			mc.fontRendererObj.drawStringWithShadow(str, 3, 0, 0xFFFFFF);
+			mc.font.drawStringWithShadow(str, 3, 0, 0xFFFFFF);
 		}
 		int cc = isIngame ? 0xBBBBBB : 0xFFFFFF;
 		if(!StringUtils.isAllBlank(progressState.statusString2)) {
 			str = progressState.statusString2;
-			mc.fontRendererObj.drawStringWithShadow(str, 3, 11, cc);
+			mc.font.drawStringWithShadow(str, 3, 11, cc);
 		}
 		int progX1 = 3;
 		int progY1 = 22;
@@ -215,10 +215,10 @@ public class GuiUpdateCheckerOverlay extends Gui {
 			GlStateManager.translate(0.0f, progY2 + 2, 0.0f);
 			GlStateManager.scale(0.66f, 0.66f, 0.66f);
 			str = progressState.statusString3;
-			List<String> wrappedURL = mc.fontRendererObj.listFormattedStringToWidth(str, (int)((progX2 - progX1) * 1.5f));
+			List<String> wrappedURL = mc.font.listFormattedStringToWidth(str, (int)((progX2 - progX1) * 1.5f));
 			for(int i = 0, l = wrappedURL.size(); i < l; ++i) {
 				str = wrappedURL.get(i);
-				mc.fontRendererObj.drawStringWithShadow(str, 5, i * 11, cc);
+				mc.font.drawStringWithShadow(str, 5, i * 11, cc);
 			}
 			totalHeightOffset += (int)(wrappedURL.size() * 5.5f);
 		}
@@ -232,9 +232,9 @@ public class GuiUpdateCheckerOverlay extends Gui {
 		}
 		if (btn == 0) {
 			if(checkForUpdatesButton.mousePressed(mc, mx, my)) {
-				mc.gameSettings.enableUpdateSvc = !mc.gameSettings.enableUpdateSvc;
-				mc.gameSettings.saveOptions();
-				checkForUpdatesButton.displayString =  I18n.format("update.button") + " " + I18n.format(mc.gameSettings.enableUpdateSvc ? "gui.yes" : "gui.no");
+				mc.options.enableUpdateSvc = !mc.options.enableUpdateSvc;
+				mc.options.saveOptions();
+				checkForUpdatesButton.displayString =  I18n.get("update.button") + " " + I18n.get(mc.options.enableUpdateSvc ? "gui.yes" : "gui.no");
 			}
 			if(startDownloadButton.mousePressed(mc, mx, my)) {
 				if(!UpdateService.getUpdatingStatus().isBusy) {
@@ -245,7 +245,7 @@ public class GuiUpdateCheckerOverlay extends Gui {
 				}
 			}
 			if(viewAllUpdatesButton.mousePressed(mc, mx, my)) {
-				mc.displayGuiScreen(new GuiUpdateVersionList(backScreen));
+				mc.displayScreen(new GuiUpdateVersionList(backScreen));
 			}
 			if(dismissUpdatesButton.mousePressed(mc, mx, my)) {
 				UpdateCertificate cert = UpdateService.getLatestUpdateFound();
@@ -256,7 +256,7 @@ public class GuiUpdateCheckerOverlay extends Gui {
 		}
 	}
 
-	public int getSharedWorldInfoYOffset() {
+	public int getSharedLevelDataYOffset() {
 		return totalHeightOffset;
 	}
 }

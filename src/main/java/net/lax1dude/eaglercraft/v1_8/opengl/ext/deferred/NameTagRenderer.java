@@ -16,7 +16,7 @@
 
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 public class NameTagRenderer {
 

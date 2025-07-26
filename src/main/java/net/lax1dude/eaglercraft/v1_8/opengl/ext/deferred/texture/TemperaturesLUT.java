@@ -21,21 +21,21 @@ import java.io.InputStream;
 
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 
-public class TemperaturesLUT implements IResourceManagerReloadListener {
+public class TemperaturesLUT implements ResourceManagerReloadListener {
 
 	private static final Logger logger = LogManager.getLogger("TemperaturesLUT");
 
 	public static final float[][] colorTemperatureLUT = new float[390][3];
 
 	@Override
-	public void onResourceManagerReload(IResourceManager var1) {
+	public void onResourceManagerReload(ResourceManager var1) {
 		try {
-			IResource res = var1.getResource(new ResourceLocation("eagler:glsl/deferred/temperatures.lut"));
+			Resource res = var1.getResource(new ResourceLocation("eagler:glsl/deferred/temperatures.lut")).orElseThrow();
 			try(InputStream is = res.getInputStream()) {
 				for(int i = 0; i < 390; ++i) {
 					colorTemperatureLUT[i][0] = ((int)is.read() & 0xFF) * 0.0039216f;

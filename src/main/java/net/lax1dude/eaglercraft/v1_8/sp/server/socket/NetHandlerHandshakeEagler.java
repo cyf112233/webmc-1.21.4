@@ -17,12 +17,12 @@
 package net.lax1dude.eaglercraft.v1_8.sp.server.socket;
 
 import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerMinecraftServer;
-import net.minecraft.network.handshake.INetHandlerHandshakeServer;
-import net.minecraft.network.handshake.client.C00Handshake;
-import net.minecraft.server.network.NetHandlerLoginServer;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.protocol.handshake.ServerHandshakePacketListener;
+import net.minecraft.network.protocol.login.ServerboundHelloPacket;
+import net.minecraft.server.network.ServerLoginPacketListenerImpl;
+import net.minecraft.network.chat.Component;
 
-public class NetHandlerHandshakeEagler implements INetHandlerHandshakeServer {
+public class NetHandlerHandshakeEagler implements ServerHandshakePacketListener {
 
 	private final EaglerMinecraftServer mcServer;
 	private final IntegratedServerPlayerNetworkManager networkManager;
@@ -33,12 +33,12 @@ public class NetHandlerHandshakeEagler implements INetHandlerHandshakeServer {
 	}
 
 	@Override
-	public void onDisconnect(IChatComponent var1) {
+	public void onDisconnect(Component var1) {
 		
 	}
 
 	@Override
-	public void processHandshake(C00Handshake var1) {
+	public void processHandshake(ServerboundHelloPacket var1) {
 		this.networkManager.setConnectionState(var1.getRequestedState());
 		this.networkManager.setNetHandler(new NetHandlerLoginServer(this.mcServer, this.networkManager));
 	}

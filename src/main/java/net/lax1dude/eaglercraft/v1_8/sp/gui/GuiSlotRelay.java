@@ -16,136 +16,164 @@
 
 package net.lax1dude.eaglercraft.v1_8.sp.gui;
 
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQuery;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiSlot;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 
-class GuiSlotRelay extends GuiSlot {
+class ContainerObjectSelectionListRelay extends ObjectSelectionList<ContainerObjectSelectionListRelay.RelayEntry> {
 
-	private static final ResourceLocation eaglerGuiTex = new ResourceLocation("eagler:gui/eagler_gui.png");
+    private static final Component RELAY_LOADING = Component.translatable("relay.loading");
+    private static final Component RELAY_CONNECTING = Component.translatable("relay.connecting");
+    private static final Component RELAY_CONNECTED = Component.translatable("relay.connected");
+    private static final Component RELAY_FAILED = Component.translatable("relay.failed");
+    private static final Component RELAY_UNKNOWN = Component.translatable("relay.unknown");
 
-	final GuiScreenRelay screen;
-	final RelayManager relayManager;
+    private static final ResourceLocation eaglerGuiTex = new ResourceLocation("eagler:gui/eagler_gui.png");
 
-	public GuiSlotRelay(GuiScreenRelay screen) {
-		super(GuiScreenRelay.getMinecraft(screen), screen.width, screen.height, 32, screen.height - 64, 26);
-		this.screen = screen;
-		this.relayManager = RelayManager.relayManager;
-	}
+    final ScreenRelay screen;
+    final RelayManager relayManager;
 
-	@Override
-	protected int getSize() {
-		return relayManager.count();
-	}
+    public ContainerObjectSelectionListRelay(ScreenRelay screen) {
+        super(screen.minecraft, screen.width, screen.height - 64, 32, 26);
+        this.screen = screen;
+        this.relayManager = RelayManager.relayManager;
+        this.setRenderBackground(false);
+        this.setRenderTopAndBottom(false);
+        this.refreshEntries();
+    }
 
-	@Override
-	protected void elementClicked(int var1, boolean var2, int var3, int var4) {
-		screen.selected = var1;
-		screen.updateButtons();
-	}
+    public void refreshEntries() {
+        this.clearEntries();
+        for (int i = 0; i < relayManager.count(); i++) {
+            this.addEntry(new RelayEntry(relayManager.get(i), i));
+        }
+    }
 
-	@Override
-	protected boolean isSelected(int var1) {
-		return screen.selected == var1;
-	}
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (super.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (button == 0) {
+            int i = this.getRowWidth() / 2 - 140;
+            int j = this.width / 2 - 140;
+            int k = this.getRowTop(0);
+            int l = mouseY - k;
+            int m = this.getRowWidth();
+            int n = this.itemHeight;
+            if (mouseX >= j && mouseX <= j + m && l >= 0 && l < n * this.getItemCount()) {
+                int o = this.getRowLeft();
+                int p = (int) Math.floor(l / n);
+                if (p >= 0 && p < this.getItemCount()) {
+                    this.selectItem(p);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-	@Override
-	protected void drawBackground() {
-		screen.drawDefaultBackground();
-	}
+    private void selectItem(int index) {
+        screen.selected = index;
+        screen.updateButtons();
+    }
 
-	@Override
-	protected void drawSlot(int id, int xx, int yy, int width, int height, int ii) {
-		if(id < relayManager.count()) {
-			this.mc.getTextureManager().bindTexture(Gui.icons);
-			RelayServer srv = relayManager.get(id);
-			String comment = srv.comment;
-			int var15 = 0;
-			int var16 = 0;
-			String str = null;
-			int h = 12;
-			long ping = srv.getPing();
-			if(ping == 0l) {
-				var16 = 5;
-				str = "No Connection";
-			}else if(ping < 0l) {
-				var15 = 1;
-				var16 = (int) (Minecraft.getSystemTime() / 100L + (long) (id * 2) & 7L);
-				if (var16 > 4) {
-					var16 = 8 - var16;
-				}
-				str = "Polling...";
-			}else {
-				RelayQuery.VersionMismatch vm = srv.getPingCompatible();
-				if(!vm.isCompatible()) {
-					var16 = 5;
-					switch(vm) {
-						case CLIENT_OUTDATED:
-							str = "Outdated Client!";
-							break;
-						case RELAY_OUTDATED:
-							str = "Outdated Relay!";
-							break;
-						default:
-						case UNKNOWN:
-							str = "Incompatible Relay!";
-							break;
-					}
-					GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-					GlStateManager.pushMatrix();
-					GlStateManager.translate(xx + 205, yy + 11, 0.0f);
-					GlStateManager.scale(0.6f, 0.6f, 0.6f);
-					screen.drawTexturedModalRect(0, 0, 0, 144, 16, 16);
-					GlStateManager.popMatrix();
-					h += 10;
-				}else {
-					String pingComment = srv.getPingComment().trim();
-					if(pingComment.length() > 0) {
-						comment = pingComment;
-					}
-					str = "" + ping + "ms";
-					if (ping < 150L) {
-						var16 = 0;
-					} else if (ping < 300L) {
-						var16 = 1;
-					} else if (ping < 600L) {
-						var16 = 2;
-					} else if (ping < 1000L) {
-						var16 = 3;
-					} else {
-						var16 = 4;
-					}
-				}
-			}
+    @Override
+    public int getRowWidth() {
+        return 280;
+    }
 
-			GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-			screen.drawTexturedModalRect(xx + 205, yy, 0 + var15 * 10, 176 + var16 * 8, 10, 8);
-			if(srv.isPrimary()) {
-				GlStateManager.pushMatrix();
-				GlStateManager.translate(xx + 4, yy + 5, 0.0f);
-				GlStateManager.scale(0.8f, 0.8f, 0.8f);
-				this.mc.getTextureManager().bindTexture(eaglerGuiTex);
-				screen.drawTexturedModalRect(0, 0, 48, 0, 16, 16);
-				GlStateManager.popMatrix();
-			}
+    @Override
+    protected int getScrollbarPosition() {
+        return this.width / 2 + 140;
+    }
 
-			screen.drawString(mc.fontRendererObj, comment, xx + 22, yy + 2, 0xFFFFFFFF);
-			screen.drawString(mc.fontRendererObj, srv.address, xx + 22, yy + 12, 0xFF999999);
+    class RelayEntry extends ObjectSelectionList.Entry<RelayEntry> {
+        private final RelayServer srv;
+        private final int index;
 
-			if(str != null) {
-				int mx = screen.getFrameMouseX();
-				int my = screen.getFrameMouseY();
-				int rx = xx + 202;
-				if(mx > rx && mx < rx + 13 && my > yy - 1 && my < yy + h) {
-					screen.setToolTip(str);
-				}
-			}
-		}
-	}
+        public RelayEntry(RelayServer srv, int index) {
+            this.srv = srv;
+            this.index = index;
+        }
 
+        @Override
+        public void render(GuiGraphics guiGraphics, int index, int y, int x, int width, int height, int mouseX, int mouseY, boolean hovered, float partialTicks) {
+            String comment = srv.comment;
+            int xx = x + 2;
+            int yy = y - 1;
+            int w = getRowWidth() - 4;
+
+            if (index == relayManager.getPrimary()) {
+                guiGraphics.fill(xx, yy, xx + w, yy + height, 0x20FFFFFF);
+            }
+
+            if (screen.selected == index) {
+                guiGraphics.fill(xx, yy, xx + w, yy + height, 0x40FFFFFF);
+                if (screen.selected == index) {
+                    guiGraphics.fill(xx, yy, xx + 1, yy + height, 0xFFFFFFFF);
+                    guiGraphics.fill(xx + w - 1, yy, xx + w, yy + height, 0xFFFFFFFF);
+                    guiGraphics.fill(xx, yy, xx + w, yy + 1, 0xFFFFFFFF);
+                    guiGraphics.fill(xx, yy + height - 1, xx + w, yy + height, 0xFFFFFFFF);
+                }
+            }
+
+            Component statusText = getStatusText(srv);
+
+            if (statusText != null) {
+                guiGraphics.drawString(screen.font, statusText, xx + 4, yy + height - 10, 0xFFFFFF, false);
+            }
+
+            if (srv.getStatus() == 2) {
+                guiGraphics.blit(eaglerGuiTex, xx + 4, yy + 4, 48, 0, 16, 16, 256, 256);
+            }
+
+            guiGraphics.drawString(screen.font, comment, xx + 22, yy + 2, 0xFFFFFF, false);
+            guiGraphics.drawString(screen.font, srv.address, xx + 22, yy + 12, 0xFF999999, false);
+
+            if (statusText != null) {
+                int rx = xx + 202;
+                if (mouseX >= rx && mouseX < rx + 13 && mouseY >= yy - 1 && mouseY < yy + height) {
+                    screen.setToolTip(statusText.getString());
+                }
+            }
+        }
+
+        private Component getStatusText(RelayServer srv) {
+            switch (srv.getStatus()) {
+                case 0:
+                    return RELAY_LOADING;
+                case 1:
+                    return RELAY_CONNECTING;
+                case 2:
+                    if (srv.ping >= 0) {
+                        return Component.translatable("relay.connected.ms", srv.ping);
+                    }
+                    return RELAY_CONNECTED;
+                case 3:
+                    return RELAY_FAILED;
+                default:
+                    return RELAY_UNKNOWN;
+            }
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (button == 0) {
+                selectItem(index);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public Component getNarration() {
+            return Component.literal(srv.comment + " " + srv.address);
+        }
+    }
 }

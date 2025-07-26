@@ -22,18 +22,18 @@ import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.profanity_filter.ProfanityFilter;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketNotifBadgeShowV4EAG.EnumBadgePriority;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.chat.Component;
 
 public class NotificationBadge {
 	
 	public final ServerNotificationManager mgr;
 	public final EaglercraftUUID badgeUUID;
-	public final IChatComponent bodyComponent;
-	protected IChatComponent bodyComponentProfanityFilter;
-	public final IChatComponent titleComponent;
-	protected IChatComponent titleComponentProfanityFilter;
-	public final IChatComponent sourceComponent;
-	protected IChatComponent sourceComponentProfanityFilter;
+	public final Component bodyComponent;
+	protected Component bodyComponentProfanityFilter;
+	public final Component titleComponent;
+	protected Component titleComponentProfanityFilter;
+	public final Component sourceComponent;
+	protected Component sourceComponentProfanityFilter;
 	public final long clientTimestamp;
 	public final long serverTimestamp;
 	public final boolean silent;
@@ -55,8 +55,8 @@ public class NotificationBadge {
 	protected boolean unreadFlag = true;
 	protected boolean unreadFlagRender = true;
 	
-	protected NotificationBadge(ServerNotificationManager mgr, EaglercraftUUID badgeUUID, IChatComponent bodyComponent,
-			IChatComponent titleComponent, IChatComponent sourceComponent, long clientTimestamp, long serverTimestamp,
+	protected NotificationBadge(ServerNotificationManager mgr, EaglercraftUUID badgeUUID, Component bodyComponent,
+			Component titleComponent, Component sourceComponent, long clientTimestamp, long serverTimestamp,
 			boolean silent, EnumBadgePriority priority, NotificationIcon mainIcon, NotificationIcon titleIcon,
 			int hideAfterSec, int expireAfterSec, int backgroundColor, int bodyTxtColor, int titleTxtColor,
 			int sourceTxtColor) {
@@ -136,7 +136,7 @@ public class NotificationBadge {
 		}
 	}
 
-	public IChatComponent getBodyProfanityFilter() {
+	public Component getBodyProfanityFilter() {
 		if(Minecraft.getMinecraft().isEnableProfanityFilter()) {
 			if(bodyComponentProfanityFilter == null && bodyComponent != null) {
 				bodyComponentProfanityFilter = ProfanityFilter.getInstance().profanityFilterChatComponent(bodyComponent);
@@ -147,7 +147,7 @@ public class NotificationBadge {
 		}
 	}
 
-	public IChatComponent getTitleProfanityFilter() {
+	public Component getTitleProfanityFilter() {
 		if(Minecraft.getMinecraft().isEnableProfanityFilter()) {
 			if(titleComponentProfanityFilter == null && titleComponent != null) {
 				titleComponentProfanityFilter = ProfanityFilter.getInstance().profanityFilterChatComponent(titleComponent);
@@ -158,7 +158,7 @@ public class NotificationBadge {
 		}
 	}
 
-	public IChatComponent getSourceProfanityFilter() {
+	public Component getSourceProfanityFilter() {
 		if(Minecraft.getMinecraft().isEnableProfanityFilter()) {
 			if(sourceComponentProfanityFilter == null && sourceComponent != null) {
 				sourceComponentProfanityFilter = ProfanityFilter.getInstance().profanityFilterChatComponent(sourceComponent);

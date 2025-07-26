@@ -1,8 +1,16 @@
 {
-    "variants": {
-        "axis=y":  { "model": "birch_log" },
-        "axis=z":   { "model": "birch_log_side" },
-        "axis=x":   { "model": "birch_log_side", "y": 90 },
-        "axis=none": { "model": "birch_bark" }
+  "variants": {
+    "axis=x": {
+      "model": "minecraft:block/birch_log_horizontal",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "minecraft:block/birch_log"
+    },
+    "axis=z": {
+      "model": "minecraft:block/birch_log_horizontal",
+      "x": 90
     }
+  }
 }

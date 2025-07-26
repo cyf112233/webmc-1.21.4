@@ -17,24 +17,24 @@
 package net.lax1dude.eaglercraft.v1_8.sp.server;
 
 import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
-import net.minecraft.world.WorldProvider;
-import net.minecraft.world.chunk.storage.IChunkLoader;
-import net.minecraft.world.storage.SaveHandler;
-import net.minecraft.world.storage.WorldInfo;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.level.storage.LevelStorageSource; // Updated to new package name
+import net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess; // Updated to new package name
+//import net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess;
+import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.nbt.CompoundTag;
 
-public class EaglerSaveHandler extends SaveHandler {
+public class EaglerSaveHandler extends net.minecraft.world.level.storage.LevelStorageSource {
 
 	public EaglerSaveHandler(VFile2 savesDirectory, String directoryName) {
 		super(savesDirectory, directoryName);
 	}
 
-	public IChunkLoader getChunkLoader(WorldProvider provider) {
-		return new EaglerChunkLoader(WorldsDB.newVFile(this.getWorldDirectory(), "level" + provider.getDimensionId()));
+	public net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess getChunkLoader(net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess provider) {
+		return new EaglerChunkLoader(LevelsDB.newVFile(this.getLevelDirectory(), "level" + provider.getDimensionId()));
 	}
 
-	public void saveWorldInfoWithPlayer(WorldInfo worldInformation, NBTTagCompound tagCompound) {
+	public void saveLevelDataWithPlayer(LevelData worldInformation, CompoundTag tagCompound) {
 		worldInformation.setSaveVersion(19133);
-		super.saveWorldInfoWithPlayer(worldInformation, tagCompound);
+		super.saveLevelDataWithPlayer(worldInformation, tagCompound);
 	}
 }

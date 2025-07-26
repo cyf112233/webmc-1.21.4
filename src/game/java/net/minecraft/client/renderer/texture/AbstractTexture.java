@@ -1,100 +1,114 @@
 package net.minecraft.client.renderer.texture;
 
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.util.TriState;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
+@OnlyIn(Dist.CLIENT)
+public abstract class AbstractTexture implements AutoCloseable {
+    public static final int NOT_ASSIGNED = -1;
+    protected int id = -1;
+    protected boolean defaultBlur;
+    private int wrapS = 10497;
+    private int wrapT = 10497;
+    private int minFilter = 9986;
+    private int magFilter = 9729;
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public abstract class AbstractTexture implements ITextureObject {
-	protected int glTextureId = -1;
-	protected boolean blur;
-	protected boolean mipmap;
-	protected boolean blurLast;
-	protected boolean mipmapLast;
-	protected boolean hasAllocated;
+    public void setClamp(boolean p_377282_) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        int i;
+        int j;
+        if (p_377282_) {
+            i = 33071;
+            j = 33071;
+        } else {
+            i = 10497;
+            j = 10497;
+        }
 
-	public void setBlurMipmapDirect(boolean parFlag, boolean parFlag2) {
-		if (blur != parFlag || mipmap != parFlag2) {
-			this.blur = parFlag;
-			this.mipmap = parFlag2;
-			setBlurMipmapDirect0(parFlag, parFlag2);
-		}
-	}
+        boolean flag = this.wrapS != i;
+        boolean flag1 = this.wrapT != j;
+        if (flag || flag1) {
+            this.bind();
+            if (flag) {
+                GlStateManager._texParameter(3553, 10242, i);
+                this.wrapS = i;
+            }
 
-	protected void setBlurMipmapDirect0(boolean parFlag, boolean parFlag2) {
-		int i = -1;
-		short short1 = -1;
-		if (parFlag) {
-			i = parFlag2 ? 9987 : 9729;
-			short1 = 9729;
-		} else {
-			i = parFlag2 ? 9986 : 9728;
-			short1 = 9728;
-		}
+            if (flag1) {
+                GlStateManager._texParameter(3553, 10243, j);
+                this.wrapT = j;
+            }
+        }
+    }
 
-		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, i);
-		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, short1);
-	}
+    public void setFilter(TriState p_377375_, boolean p_378683_) {
+        this.setFilter(p_377375_.toBoolean(this.defaultBlur), p_378683_);
+    }
 
-	public void setBlurMipmap(boolean parFlag, boolean parFlag2) {
-		this.blurLast = this.blur;
-		this.mipmapLast = this.mipmap;
-		this.setBlurMipmapDirect(parFlag, parFlag2);
-	}
+    public void setFilter(boolean p_117961_, boolean p_117962_) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        int i;
+        int j;
+        if (p_117961_) {
+            i = p_117962_ ? 9987 : 9729;
+            j = 9729;
+        } else {
+            i = p_117962_ ? 9986 : 9728;
+            j = 9728;
+        }
 
-	public void restoreLastBlurMipmap() {
-		this.setBlurMipmapDirect(this.blurLast, this.mipmapLast);
-	}
+        boolean flag = this.minFilter != i;
+        boolean flag1 = this.magFilter != j;
+        if (flag1 || flag) {
+            this.bind();
+            if (flag) {
+                GlStateManager._texParameter(3553, 10241, i);
+                this.minFilter = i;
+            }
 
-	public int getGlTextureId() {
-		if (this.glTextureId == -1) {
-			this.glTextureId = TextureUtil.glGenTextures();
-			hasAllocated = false;
-		}
+            if (flag1) {
+                GlStateManager._texParameter(3553, 10240, j);
+                this.magFilter = j;
+            }
+        }
+    }
 
-		return this.glTextureId;
-	}
+    public int getId() {
+        RenderSystem.assertOnRenderThreadOrInit();
+        if (this.id == -1) {
+            this.id = TextureUtil.generateTextureId();
+        }
 
-	public void deleteGlTexture() {
-		if (this.glTextureId != -1) {
-			TextureUtil.deleteTexture(this.glTextureId);
-			this.glTextureId = -1;
-		}
+        return this.id;
+    }
 
-	}
+    public void releaseId() {
+        if (!RenderSystem.isOnRenderThread()) {
+            RenderSystem.recordRenderCall(() -> {
+                if (this.id != -1) {
+                    TextureUtil.releaseTextureId(this.id);
+                    this.id = -1;
+                }
+            });
+        } else if (this.id != -1) {
+            TextureUtil.releaseTextureId(this.id);
+            this.id = -1;
+        }
+    }
 
-	/**
-	 * This function is needed due to EaglercraftX's use of glTexStorage2D to
-	 * allocate memory for textures, some OpenGL implementations don't like it when
-	 * you call glTexStorage2D on the same texture object more than once
-	 */
-	protected void regenerateIfNotAllocated() {
-		if (this.glTextureId != -1) {
-			if (hasAllocated) {
-				if (EaglercraftGPU.checkTexStorageCapable()) {
-					EaglercraftGPU.regenerateTexture(glTextureId);
-				}
-			}
-			hasAllocated = true;
-		}
-	}
+    public void bind() {
+        if (!RenderSystem.isOnRenderThreadOrInit()) {
+            RenderSystem.recordRenderCall(() -> GlStateManager._bindTexture(this.getId()));
+        } else {
+            GlStateManager._bindTexture(this.getId());
+        }
+    }
+
+    @Override
+    public void close() {
+    }
 }

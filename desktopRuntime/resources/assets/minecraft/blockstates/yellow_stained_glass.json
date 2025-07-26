@@ -1,5 +1,7 @@
 {
-    "variants": {
-        "normal": { "model": "glass_yellow" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/yellow_stained_glass"
     }
+  }
 }

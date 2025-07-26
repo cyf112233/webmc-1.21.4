@@ -77,9 +77,9 @@ public class IntegratedServerState {
 		case IPCPacketFFProcessKeepAlive.FAILURE: return true;
 		case IPCPacket01StopServer.ID: return true;
 		case IPCPacket00StartServer.ID: return state == WORLD_LOADING;
-		case IPCPacket03DeleteWorld.ID: return state == WORLD_DELETING;
-		case IPCPacket06RenameWorldNBT.ID: return (state == WORLD_DUPLICATING || state == WORLD_RENAMING);
-		case IPCPacket07ImportWorld.ID: return state == WORLD_IMPORTING;
+		case IPCPacket03DeleteLevel.ID: return state == WORLD_DELETING;
+		case IPCPacket06RenameLevelNBT.ID: return (state == WORLD_DUPLICATING || state == WORLD_RENAMING);
+		case IPCPacket07ImportLevel.ID: return state == WORLD_IMPORTING;
 		case IPCPacket0BPause.ID:
 		case IPCPacket19Autosave.ID: return (state == WORLD_SAVING || state == WORLD_PAUSED || state == WORLD_LOADED || state == WORLD_UNLOADING);
 		case IPCPacket12FileWrite.ID: return state == WORLD_FILE_WRITE;

@@ -47,7 +47,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.teavm.TeaVMClientConfigAdapter;
 import net.lax1dude.eaglercraft.v1_8.internal.teavm.TeaVMUtils;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.util.MathHelper;
+import net.minecraft.util.Mth;
 
 public class PlatformAudio {
 	
@@ -565,10 +565,10 @@ public class PlatformAudio {
 	}
 
 	public static void setListener(float x, float y, float z, float pitchDegrees, float yawDegrees) {
-		float var2 = MathHelper.cos(-yawDegrees * 0.017453292F);
-		float var3 = MathHelper.sin(-yawDegrees * 0.017453292F);
-		float var4 = -MathHelper.cos(pitchDegrees * 0.017453292F);
-		float var5 = MathHelper.sin(pitchDegrees * 0.017453292F);
+		float var2 = Mth.cos(-yawDegrees * 0.017453292F);
+		float var3 = Mth.sin(-yawDegrees * 0.017453292F);
+		float var4 = -Mth.cos(pitchDegrees * 0.017453292F);
+		float var5 = Mth.sin(pitchDegrees * 0.017453292F);
 		AudioListener l = audioctx.getListener();
 		l.setPosition(x, y, z);
 		l.setOrientation(-var3 * var4, -var5, -var2 * var4, 0.0f, 1.0f, 0.0f);

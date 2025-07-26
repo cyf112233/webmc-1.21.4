@@ -1,12 +1,6 @@
 {
-    "parent": "block/cube",
+    "parent": "block/orientable_with_bottom",
     "textures": {
-        "particle": "#front",
-        "down": "#top",
-        "up": "#top",
-        "north": "#front",
-        "east": "#side",
-        "south": "#side",
-        "west": "#side"
+        "bottom": "#top"
     }
 }

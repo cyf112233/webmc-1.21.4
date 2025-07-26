@@ -73,14 +73,14 @@ public class GamepadConstants {
 		registerBtn(GAMEPAD_B, GLFW_GAMEPAD_BUTTON_B, "B");
 		registerBtn(GAMEPAD_X, GLFW_GAMEPAD_BUTTON_X, "X");
 		registerBtn(GAMEPAD_Y, GLFW_GAMEPAD_BUTTON_Y, "Y");
-		registerBtn(GAMEPAD_LEFT_BUTTON, GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, "Left Button");
+		registerBtn(GAMEPAD_LEFT_BUTTON, GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, "Left net.minecraft.client.gui.components.Button");
 		registerBtn(GAMEPAD_LEFT_TRIGGER, -1, "Left Trigger");
-		registerBtn(GAMEPAD_RIGHT_BUTTON, GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, "Right Button");
+		registerBtn(GAMEPAD_RIGHT_BUTTON, GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, "Right net.minecraft.client.gui.components.Button");
 		registerBtn(GAMEPAD_RIGHT_TRIGGER, -1, "Right Trigger");
 		registerBtn(GAMEPAD_BACK, GLFW_GAMEPAD_BUTTON_BACK, "Back");
 		registerBtn(GAMEPAD_START, GLFW_GAMEPAD_BUTTON_START, "Start");
-		registerBtn(GAMEPAD_LEFT_STICK_BUTTON, GLFW_GAMEPAD_BUTTON_LEFT_THUMB, "L. Stick Button");
-		registerBtn(GAMEPAD_RIGHT_STICK_BUTTON, GLFW_GAMEPAD_BUTTON_RIGHT_THUMB, "R. Stick Button");
+		registerBtn(GAMEPAD_LEFT_STICK_BUTTON, GLFW_GAMEPAD_BUTTON_LEFT_THUMB, "L. Stick net.minecraft.client.gui.components.Button");
+		registerBtn(GAMEPAD_RIGHT_STICK_BUTTON, GLFW_GAMEPAD_BUTTON_RIGHT_THUMB, "R. Stick net.minecraft.client.gui.components.Button");
 		registerBtn(GAMEPAD_DPAD_UP, GLFW_GAMEPAD_BUTTON_DPAD_UP, "D-Pad Up");
 		registerBtn(GAMEPAD_DPAD_DOWN, GLFW_GAMEPAD_BUTTON_DPAD_DOWN, "D-Pad Down");
 		registerBtn(GAMEPAD_DPAD_LEFT, GLFW_GAMEPAD_BUTTON_DPAD_LEFT, "D-Pad Left");
@@ -120,7 +120,7 @@ public class GamepadConstants {
 		if(button >= 0 && button < buttonNames.length) {
 			return buttonNames[button];
 		}else {
-			return "Button " + button;
+			return "net.minecraft.client.gui.components.Button " + button;
 		}
 	}
 

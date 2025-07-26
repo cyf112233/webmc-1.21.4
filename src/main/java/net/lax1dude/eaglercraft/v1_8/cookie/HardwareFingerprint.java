@@ -30,15 +30,21 @@ import net.lax1dude.eaglercraft.v1_8.opengl.GLSLHeader;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
 import net.lax1dude.eaglercraft.v1_8.opengl.VSHInputLayoutParser;
-import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 import static net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.ExtGLEnums.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+
+import org.lwjgl.BufferUtils;
 
 import com.google.common.collect.Lists;
 
@@ -82,16 +88,27 @@ public class HardwareFingerprint {
 			return new byte[0];
 		}
 		
-		int[][] mipmapLevels = TextureUtil.generateMipmapData(7, 128,
-				new int[][] { img.pixels, null, null, null, null, null, null, null });
-		
 		int helperTexture = GlStateManager.generateTexture();
 		GlStateManager.bindTexture(helperTexture);
 		_wglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		_wglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		_wglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		TextureUtil.allocateTextureImpl(helperTexture, 7, 128, 128);
-		TextureUtil.uploadTextureMipmap(mipmapLevels, 128, 128, 0, 0, false, false);
+		_wglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer pixelBuffer = EagRuntime.allocateByteBuffer(img.pixels.length * 4);
+		try {
+			for(int i = 0; i < img.pixels.length; i++) {
+				int pixel = img.pixels[i];
+				pixelBuffer.put((byte)((pixel >> 16) & 0xFF));
+				pixelBuffer.put((byte)((pixel >> 8) & 0xFF));
+				pixelBuffer.put((byte)(pixel & 0xFF));
+				pixelBuffer.put((byte)((pixel >> 24) & 0xFF));
+			}
+			pixelBuffer.flip();
+			_wglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+		} finally {
+			EagRuntime.freeByteBuffer(pixelBuffer);
+		}
+		_wglGenerateMipmap(GL_TEXTURE_2D);
 		if(checkAnisotropicFilteringSupport()) {
 			_wglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
 		}
@@ -202,7 +219,7 @@ public class HardwareFingerprint {
 		}else {
 			dataLength = 256 * 256 * 4;
 			type = GL_UNSIGNED_BYTE;
-			EaglercraftGPU.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer)null);
+			EaglercraftGPU.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, (net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer)null);
 		}
 		
 		_wglBindFramebuffer(_GL_FRAMEBUFFER, framebuffer);
@@ -218,7 +235,7 @@ public class HardwareFingerprint {
 		_wglDeleteProgram(program);
 		GlStateManager.deleteTexture(helperTexture);
 		
-		ByteBuffer readBuffer = EagRuntime.allocateByteBuffer(dataLength);
+		net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer readBuffer = EagRuntime.allocateByteBuffer(dataLength);
 		EaglercraftGPU.glReadPixels(0, 0, 256, 256, GL_RGBA, type, readBuffer);
 		
 		_wglBindFramebuffer(_GL_FRAMEBUFFER, null);

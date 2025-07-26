@@ -34,8 +34,8 @@ import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program.PipelineShaderL
 import net.lax1dude.eaglercraft.v1_8.vector.Matrix3f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector3f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.resources.ResourceLocation;
 
 public class LensFlareMeshRenderer {
 
@@ -202,8 +202,8 @@ public class LensFlareMeshRenderer {
 
 	static void pushStreakQuad(ByteBuffer copyBuffer, float x, float y, float w, float h, float tx, float ty, float tw,
 			float th, float rotation) {
-		tmpMat.m00 = MathHelper.cos(rotation);
-		tmpMat.m01 = MathHelper.sin(rotation);
+		tmpMat.m00 = Mth.cos(rotation);
+		tmpMat.m01 = Mth.sin(rotation);
 		tmpMat.m10 = -tmpMat.m01;
 		tmpMat.m11 = tmpMat.m00;
 		tmpMat.m20 = x;
@@ -282,10 +282,10 @@ public class LensFlareMeshRenderer {
 		streaksProgram.useProgram();
 
 		Minecraft mc = Minecraft.getMinecraft();
-		float aspectRatio = (float)mc.displayHeight / (float)mc.displayWidth;
+		float aspectRatio = (float)mc.getWindow().getHeight() / (float)mc.getWindow().getWidth();
 
 		float fov = 90.0f / mc.entityRenderer.getFOVModifier(EaglerDeferredPipeline.instance.getPartialTicks(), true);
-		float size = 0.075f * fov * (1.0f + MathHelper.sqrt_float(sunScreenX * sunScreenX + sunScreenY * sunScreenY));
+		float size = 0.075f * fov * (1.0f + Mth.sqrt_float(sunScreenX * sunScreenX + sunScreenY * sunScreenY));
 
 		tmpMat.setIdentity();
 		tmpMat.m00 = aspectRatio * 2.0f * size;
@@ -296,8 +296,8 @@ public class LensFlareMeshRenderer {
 		float rotation = sunScreenX * sunScreenX * Math.signum(sunScreenX) + sunScreenY * sunScreenY * Math.signum(sunScreenY);
 
 		tmpMat2.setIdentity();
-		tmpMat2.m00 = MathHelper.cos(rotation);
-		tmpMat2.m01 = MathHelper.sin(rotation);
+		tmpMat2.m00 = Mth.cos(rotation);
+		tmpMat2.m01 = Mth.sin(rotation);
 		tmpMat2.m10 = -tmpMat2.m01;
 		tmpMat2.m11 = tmpMat2.m00;
 		Matrix3f.mul(tmpMat, tmpMat2, tmpMat);

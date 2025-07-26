@@ -1,183 +1,163 @@
 package net.minecraft.client.renderer.chunk;
 
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.ints.IntPriorityQueue;
 import java.util.BitSet;
 import java.util.EnumSet;
-import java.util.LinkedList;
 import java.util.Set;
+import net.minecraft.Util;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-import com.google.common.collect.Lists;
-
-import net.minecraft.util.BlockPos;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.IntegerCache;
-
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
+@OnlyIn(Dist.CLIENT)
 public class VisGraph {
-	private static final int field_178616_a = (int) Math.pow(16.0D, 0.0D);
-	private static final int field_178614_b = (int) Math.pow(16.0D, 1.0D);
-	private static final int field_178615_c = (int) Math.pow(16.0D, 2.0D);
-	private final BitSet field_178612_d = new BitSet(4096);
-	private static final int[] field_178613_e = new int[1352];
-	private int field_178611_f = 4096;
+    private static final int SIZE_IN_BITS = 4;
+    private static final int LEN = 16;
+    private static final int MASK = 15;
+    private static final int SIZE = 4096;
+    private static final int X_SHIFT = 0;
+    private static final int Z_SHIFT = 4;
+    private static final int Y_SHIFT = 8;
+    private static final int DX = (int)Math.pow(16.0, 0.0);
+    private static final int DZ = (int)Math.pow(16.0, 1.0);
+    private static final int DY = (int)Math.pow(16.0, 2.0);
+    private static final int INVALID_INDEX = -1;
+    private static final Direction[] DIRECTIONS = Direction.values();
+    private final BitSet bitSet = new BitSet(4096);
+    private static final int[] INDEX_OF_EDGES = Util.make(new int[1352], p_112974_ -> {
+        int i = 0;
+        int j = 15;
+        int k = 0;
 
-	public void func_178606_a(BlockPos pos) {
-		this.field_178612_d.set(getIndex(pos), true);
-		--this.field_178611_f;
-	}
+        for (int l = 0; l < 16; l++) {
+            for (int i1 = 0; i1 < 16; i1++) {
+                for (int j1 = 0; j1 < 16; j1++) {
+                    if (l == 0 || l == 15 || i1 == 0 || i1 == 15 || j1 == 0 || j1 == 15) {
+                        p_112974_[k++] = getIndex(l, i1, j1);
+                    }
+                }
+            }
+        }
+    });
+    private int empty = 4096;
 
-	private static int getIndex(BlockPos pos) {
-		return getIndex(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
-	}
+    public void setOpaque(BlockPos p_112972_) {
+        this.bitSet.set(getIndex(p_112972_), true);
+        this.empty--;
+    }
 
-	private static int getIndex(int x, int y, int z) {
-		return x << 0 | y << 8 | z << 4;
-	}
+    private static int getIndex(BlockPos p_112976_) {
+        return getIndex(p_112976_.getX() & 15, p_112976_.getY() & 15, p_112976_.getZ() & 15);
+    }
 
-	public SetVisibility computeVisibility() {
-		SetVisibility setvisibility = new SetVisibility();
-		if (4096 - this.field_178611_f < 256) {
-			setvisibility.setAllVisible(true);
-		} else if (this.field_178611_f == 0) {
-			setvisibility.setAllVisible(false);
-		} else {
-			for (int i = 0; i < field_178613_e.length; ++i) {
-				if (!this.field_178612_d.get(field_178613_e[i])) {
-					setvisibility.setManyVisible(this.func_178604_a(field_178613_e[i]));
-				}
-			}
-		}
+    private static int getIndex(int p_112962_, int p_112963_, int p_112964_) {
+        return p_112962_ << 0 | p_112963_ << 8 | p_112964_ << 4;
+    }
 
-		return setvisibility;
-	}
+    public VisibilitySet resolve() {
+        VisibilitySet visibilityset = new VisibilitySet();
+        if (4096 - this.empty < 256) {
+            visibilityset.setAll(true);
+        } else if (this.empty == 0) {
+            visibilityset.setAll(false);
+        } else {
+            for (int i : INDEX_OF_EDGES) {
+                if (!this.bitSet.get(i)) {
+                    visibilityset.add(this.floodFill(i));
+                }
+            }
+        }
 
-	public Set<EnumFacing> func_178609_b(BlockPos pos) {
-		return this.func_178604_a(getIndex(pos));
-	}
+        return visibilityset;
+    }
 
-	private Set<EnumFacing> func_178604_a(int parInt1) {
-		EnumSet enumset = EnumSet.noneOf(EnumFacing.class);
-		LinkedList linkedlist = Lists.newLinkedList();
-		linkedlist.add(IntegerCache.func_181756_a(parInt1));
-		this.field_178612_d.set(parInt1, true);
+    private Set<Direction> floodFill(int p_112960_) {
+        Set<Direction> set = EnumSet.noneOf(Direction.class);
+        IntPriorityQueue intpriorityqueue = new IntArrayFIFOQueue();
+        intpriorityqueue.enqueue(p_112960_);
+        this.bitSet.set(p_112960_, true);
 
-		while (!linkedlist.isEmpty()) {
-			int i = ((Integer) linkedlist.poll()).intValue();
-			this.func_178610_a(i, enumset);
+        while (!intpriorityqueue.isEmpty()) {
+            int i = intpriorityqueue.dequeueInt();
+            this.addEdges(i, set);
 
-			EnumFacing[] facings = EnumFacing._VALUES;
-			for (int k = 0; k < facings.length; ++k) {
-				EnumFacing enumfacing = facings[k];
-				int j = this.func_178603_a(i, enumfacing);
-				if (j >= 0 && !this.field_178612_d.get(j)) {
-					this.field_178612_d.set(j, true);
-					linkedlist.add(IntegerCache.func_181756_a(j));
-				}
-			}
-		}
+            for (Direction direction : DIRECTIONS) {
+                int j = this.getNeighborIndexAtFace(i, direction);
+                if (j >= 0 && !this.bitSet.get(j)) {
+                    this.bitSet.set(j, true);
+                    intpriorityqueue.enqueue(j);
+                }
+            }
+        }
 
-		return enumset;
-	}
+        return set;
+    }
 
-	private void func_178610_a(int parInt1, Set<EnumFacing> parSet) {
-		int i = parInt1 >> 0 & 15;
-		if (i == 0) {
-			parSet.add(EnumFacing.WEST);
-		} else if (i == 15) {
-			parSet.add(EnumFacing.EAST);
-		}
+    private void addEdges(int p_112969_, Set<Direction> p_112970_) {
+        int i = p_112969_ >> 0 & 15;
+        if (i == 0) {
+            p_112970_.add(Direction.WEST);
+        } else if (i == 15) {
+            p_112970_.add(Direction.EAST);
+        }
 
-		int j = parInt1 >> 8 & 15;
-		if (j == 0) {
-			parSet.add(EnumFacing.DOWN);
-		} else if (j == 15) {
-			parSet.add(EnumFacing.UP);
-		}
+        int j = p_112969_ >> 8 & 15;
+        if (j == 0) {
+            p_112970_.add(Direction.DOWN);
+        } else if (j == 15) {
+            p_112970_.add(Direction.UP);
+        }
 
-		int k = parInt1 >> 4 & 15;
-		if (k == 0) {
-			parSet.add(EnumFacing.NORTH);
-		} else if (k == 15) {
-			parSet.add(EnumFacing.SOUTH);
-		}
+        int k = p_112969_ >> 4 & 15;
+        if (k == 0) {
+            p_112970_.add(Direction.NORTH);
+        } else if (k == 15) {
+            p_112970_.add(Direction.SOUTH);
+        }
+    }
 
-	}
+    private int getNeighborIndexAtFace(int p_112966_, Direction p_112967_) {
+        switch (p_112967_) {
+            case DOWN:
+                if ((p_112966_ >> 8 & 15) == 0) {
+                    return -1;
+                }
 
-	private int func_178603_a(int parInt1, EnumFacing parEnumFacing) {
-		switch (parEnumFacing) {
-		case DOWN:
-			if ((parInt1 >> 8 & 15) == 0) {
-				return -1;
-			}
+                return p_112966_ - DY;
+            case UP:
+                if ((p_112966_ >> 8 & 15) == 15) {
+                    return -1;
+                }
 
-			return parInt1 - field_178615_c;
-		case UP:
-			if ((parInt1 >> 8 & 15) == 15) {
-				return -1;
-			}
+                return p_112966_ + DY;
+            case NORTH:
+                if ((p_112966_ >> 4 & 15) == 0) {
+                    return -1;
+                }
 
-			return parInt1 + field_178615_c;
-		case NORTH:
-			if ((parInt1 >> 4 & 15) == 0) {
-				return -1;
-			}
+                return p_112966_ - DZ;
+            case SOUTH:
+                if ((p_112966_ >> 4 & 15) == 15) {
+                    return -1;
+                }
 
-			return parInt1 - field_178614_b;
-		case SOUTH:
-			if ((parInt1 >> 4 & 15) == 15) {
-				return -1;
-			}
+                return p_112966_ + DZ;
+            case WEST:
+                if ((p_112966_ >> 0 & 15) == 0) {
+                    return -1;
+                }
 
-			return parInt1 + field_178614_b;
-		case WEST:
-			if ((parInt1 >> 0 & 15) == 0) {
-				return -1;
-			}
+                return p_112966_ - DX;
+            case EAST:
+                if ((p_112966_ >> 0 & 15) == 15) {
+                    return -1;
+                }
 
-			return parInt1 - field_178616_a;
-		case EAST:
-			if ((parInt1 >> 0 & 15) == 15) {
-				return -1;
-			}
-
-			return parInt1 + field_178616_a;
-		default:
-			return -1;
-		}
-	}
-
-	static {
-		boolean flag = false;
-		boolean flag1 = true;
-		int i = 0;
-
-		for (int j = 0; j < 16; ++j) {
-			for (int k = 0; k < 16; ++k) {
-				for (int l = 0; l < 16; ++l) {
-					if (j == 0 || j == 15 || k == 0 || k == 15 || l == 0 || l == 15) {
-						field_178613_e[i++] = getIndex(j, k, l);
-					}
-				}
-			}
-		}
-
-	}
+                return p_112966_ + DX;
+            default:
+                return -1;
+        }
+    }
 }

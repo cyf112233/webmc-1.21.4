@@ -38,7 +38,7 @@ import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.*;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketVoiceSignalGlobalEAG;
 import net.lax1dude.eaglercraft.v1_8.sp.lan.LANServerController;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.entity.player.Player;
 
 public class VoiceClientController {
 
@@ -164,21 +164,21 @@ public class VoiceClientController {
 		PlatformVoiceClient.tickVoiceClient();
 
 		if (getVoiceChannel() != EnumVoiceChannelType.NONE && (getVoiceStatus() == EnumVoiceChannelStatus.CONNECTING || getVoiceStatus() == EnumVoiceChannelStatus.CONNECTED)) {
-			activateVoice((mc.currentScreen == null || !mc.currentScreen.blockPTTKey()) && Keyboard.isKeyDown(mc.gameSettings.voicePTTKey));
+			activateVoice((mc.screen == null || !mc.screen.blockPTTKey()) && Keyboard.isKeyDown(mc.options.voicePTTKey));
 
 			if(mc.isSingleplayer() && !LANServerController.isHostingLAN()) {
 				setVoiceChannel(EnumVoiceChannelType.NONE);
 				return;
 			}
 
-			if (mc.theWorld != null && mc.thePlayer != null) {
+			if (mc.theLevel != null && mc.player != null) {
 				HashSet<EaglercraftUUID> seenPlayers = new HashSet<>();
-				for (EntityPlayer player : mc.theWorld.playerEntities) {
-					if (player == mc.thePlayer) continue;
-					if (getVoiceChannel() == EnumVoiceChannelType.PROXIMITY) updateVoicePosition(player.getUniqueID(), player.posX, player.posY + player.getEyeHeight(), player.posZ);
+				for (Player player : mc.theLevel.playerEntities) {
+					if (player == mc.player) continue;
+					if (getVoiceChannel() == EnumVoiceChannelType.PROXIMITY) updateVoicePosition(player.getUniqueID(), player.getX(), player.getY() + player.getEyeHeight(), player.getZ());
 					int prox = 22;
 					// cube
-					if (Math.abs(mc.thePlayer.posX - player.posX) <= prox && Math.abs(mc.thePlayer.posY - player.posY) <= prox && Math.abs(mc.thePlayer.posZ - player.posZ) <= prox) {
+					if (Math.abs(mc.player.getX() - player.getX()) <= prox && Math.abs(mc.player.getY() - player.getY()) <= prox && Math.abs(mc.player.getZ() - player.getZ()) <= prox) {
 						if (!uuidToNameLookup.containsKey(player.getUniqueID())) {
 							uuidToNameLookup.put(player.getUniqueID(), player.getName());
 						}

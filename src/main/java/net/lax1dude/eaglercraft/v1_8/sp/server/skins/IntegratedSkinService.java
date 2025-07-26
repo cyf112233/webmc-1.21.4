@@ -32,15 +32,15 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessagePacket;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketOtherSkinPresetEAG;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.util.SkinPacketVersionCache;
-import net.lax1dude.eaglercraft.v1_8.sp.server.WorldsDB;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Items;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
+import net.lax1dude.eaglercraft.v1_8.sp.server.LevelsDB;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 
 public class IntegratedSkinService {
 
@@ -72,7 +72,7 @@ public class IntegratedSkinService {
 		this.skullsDirectory = skullsDirectory;
 	}
 
-	public void processLoginPacket(byte[] packetData, EntityPlayerMP sender, int protocolVers) {
+	public void processLoginPacket(byte[] packetData, ServerPlayer sender, int protocolVers) {
 		try {
 			IntegratedSkinPackets.registerEaglerPlayer(sender.getUniqueID(), packetData, this, protocolVers);
 		} catch (IOException e) {
@@ -82,7 +82,7 @@ public class IntegratedSkinService {
 		}
 	}
 
-	public void processPacketGetOtherSkin(EaglercraftUUID searchUUID, EntityPlayerMP sender) {
+	public void processPacketGetOtherSkin(EaglercraftUUID searchUUID, ServerPlayer sender) {
 		SkinPacketVersionCache playerSkin = playerSkins.get(searchUUID);
 		GameMessagePacket toSend = null;
 		if(playerSkin != null) {
@@ -93,7 +93,7 @@ public class IntegratedSkinService {
 		sender.playerNetServerHandler.sendEaglerMessage(toSend);
 	}
 
-	public void processPacketGetOtherSkin(EaglercraftUUID searchUUID, String urlStr, EntityPlayerMP sender) {
+	public void processPacketGetOtherSkin(EaglercraftUUID searchUUID, String urlStr, ServerPlayer sender) {
 		urlStr = urlStr.toLowerCase();
 		GameMessagePacket playerSkin;
 		if(!urlStr.startsWith("eagler://")) {
@@ -123,35 +123,35 @@ public class IntegratedSkinService {
 		playerSkins.remove(clientUUID);
 	}
 
-	public void processPacketInstallNewSkin(byte[] skullData, EntityPlayerMP sender) {
+	public void processPacketInstallNewSkin(byte[] skullData, ServerPlayer sender) {
 		if(!sender.canCommandSenderUseCommand(2, "give")) {
-			ChatComponentTranslation cc = new ChatComponentTranslation("command.skull.nopermission");
-			cc.getChatStyle().setColor(EnumChatFormatting.RED);
+			Component cc = new Component("command.skull.nopermission");
+			cc.getChatStyle().setColor(ChatFormatting.RED);
 			sender.addChatMessage(cc);
 			return;
 		}
 		String fileName = "eagler://" + installNewSkull(skullData);
-		NBTTagCompound rootTagCompound = new NBTTagCompound();
-		NBTTagCompound ownerTagCompound = new NBTTagCompound();
+		CompoundTag rootTagCompound = new CompoundTag();
+		CompoundTag ownerTagCompound = new CompoundTag();
 		ownerTagCompound.setString("Name", "Eagler");
 		ownerTagCompound.setString("Id", EaglercraftUUID.nameUUIDFromBytes((("EaglerSkullUUID:" + fileName).getBytes(StandardCharsets.UTF_8))).toString());
-		NBTTagCompound propertiesTagCompound = new NBTTagCompound();
-		NBTTagList texturesTagList = new NBTTagList();
-		NBTTagCompound texturesTagCompound = new NBTTagCompound();
+		CompoundTag propertiesTagCompound = new CompoundTag();
+		ListTag texturesTagList = new ListTag();
+		CompoundTag texturesTagCompound = new CompoundTag();
 		String texturesProp = "{\"textures\":{\"SKIN\":{\"url\":\"" + fileName + "\",\"metadata\":{\"model\":\"default\"}}}}";
 		texturesTagCompound.setString("Value", Base64.encodeBase64String(texturesProp.getBytes(StandardCharsets.UTF_8)));
 		texturesTagList.appendTag(texturesTagCompound);
 		propertiesTagCompound.setTag("textures", texturesTagList);
 		ownerTagCompound.setTag("Properties", propertiesTagCompound);
 		rootTagCompound.setTag("SkullOwner", ownerTagCompound);
-		NBTTagCompound displayTagCompound = new NBTTagCompound();
-		displayTagCompound.setString("Name", EnumChatFormatting.RESET + "Custom Eaglercraft Skull");
-		NBTTagList loreList = new NBTTagList();
-		loreList.appendTag(new NBTTagString(EnumChatFormatting.GRAY + (fileName.length() > 24 ? (fileName.substring(0, 22) + "...") : fileName)));
+		CompoundTag displayTagCompound = new CompoundTag();
+		displayTagCompound.setString("Name", ChatFormatting.RESET + "Custom Eaglercraft Skull");
+		ListTag loreList = new ListTag();
+		loreList.appendTag(new StringTag(ChatFormatting.GRAY + (fileName.length() > 24 ? (fileName.substring(0, 22) + "...") : fileName)));
 		displayTagCompound.setTag("Lore", loreList);
 		rootTagCompound.setTag("display", displayTagCompound);
 		ItemStack stack = new ItemStack(Items.skull, 1, 3);
-		stack.setTagCompound(rootTagCompound);
+		stack.setTag(rootTagCompound);
 		boolean flag = sender.inventory.addItemStackToInventory(stack);
 		if (flag) {
 			sender.worldObj.playSoundAtEntity(sender, "random.pop", 0.2F,
@@ -159,7 +159,7 @@ public class IntegratedSkinService {
 							* 2.0F);
 			sender.inventoryContainer.detectAndSendChanges();
 		}
-		sender.addChatMessage(new ChatComponentTranslation("command.skull.feedback", fileName));
+		sender.addChatMessage(new Component("command.skull.feedback", fileName));
 	}
 
 	private static final String hex = "0123456789abcdef";
@@ -182,12 +182,12 @@ public class IntegratedSkinService {
 		}
 		String str = "skin-" + new String(hashText) + ".bmp";
 		customSkulls.put(str, new CustomSkullData(str, skullData));
-		WorldsDB.newVFile(skullsDirectory, str).setAllBytes(skullData);
+		LevelsDB.newVFile(skullsDirectory, str).setAllBytes(skullData);
 		return str;
 	}
 
 	private CustomSkullData loadCustomSkull(String urlStr) {
-		byte[] data = WorldsDB.newVFile(skullsDirectory, urlStr).getAllBytes();
+		byte[] data = LevelsDB.newVFile(skullsDirectory, urlStr).getAllBytes();
 		if(data == null) {
 			return new CustomSkullData(urlStr, skullNotFoundTexture);
 		}else {

@@ -25,7 +25,7 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	protected volatile int availableStringFrames = 0;
 	protected volatile int availableBinaryFrames = 0;
-	protected final List<IWebSocketFrame> recievedPacketBuffer = new LinkedList<>();
+	protected final List<IWebSocketFrame> recievedFriendlyByteBuf = new LinkedList<>();
 	protected String currentURI;
 	private boolean strEnable = true;
 	private boolean binEnable = true;
@@ -43,8 +43,8 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 			if(!binEnable)
 				return;
 		}
-		synchronized(recievedPacketBuffer) {
-			recievedPacketBuffer.add(frame);
+		synchronized(recievedFriendlyByteBuf) {
+			recievedFriendlyByteBuf.add(frame);
 			if(str) {
 				++availableStringFrames;
 			}else {
@@ -55,16 +55,16 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public int availableFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			return availableStringFrames + availableBinaryFrames;
 		}
 	}
 
 	@Override
 	public IWebSocketFrame getNextFrame() {
-		synchronized(recievedPacketBuffer) {
-			if(!recievedPacketBuffer.isEmpty()) {
-				IWebSocketFrame frame = recievedPacketBuffer.remove(0);
+		synchronized(recievedFriendlyByteBuf) {
+			if(!recievedFriendlyByteBuf.isEmpty()) {
+				IWebSocketFrame frame = recievedFriendlyByteBuf.remove(0);
 				if(frame.isString()) {
 					--availableStringFrames;
 				}else {
@@ -79,10 +79,10 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public List<IWebSocketFrame> getNextFrames() {
-		synchronized(recievedPacketBuffer) {
-			if(!recievedPacketBuffer.isEmpty()) {
-				List<IWebSocketFrame> ret = new ArrayList<>(recievedPacketBuffer);
-				recievedPacketBuffer.clear();
+		synchronized(recievedFriendlyByteBuf) {
+			if(!recievedFriendlyByteBuf.isEmpty()) {
+				List<IWebSocketFrame> ret = new ArrayList<>(recievedFriendlyByteBuf);
+				recievedFriendlyByteBuf.clear();
 				availableStringFrames = 0;
 				availableBinaryFrames = 0;
 				return ret;
@@ -94,23 +94,23 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public void clearFrames() {
-		synchronized(recievedPacketBuffer) {
-			recievedPacketBuffer.clear();
+		synchronized(recievedFriendlyByteBuf) {
+			recievedFriendlyByteBuf.clear();
 		}
 	}
 
 	@Override
 	public int availableStringFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			return availableStringFrames;
 		}
 	}
 
 	@Override
 	public IWebSocketFrame getNextStringFrame() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			if(availableStringFrames > 0) {
-				Iterator<IWebSocketFrame> itr = recievedPacketBuffer.iterator();
+				Iterator<IWebSocketFrame> itr = recievedFriendlyByteBuf.iterator();
 				while(itr.hasNext()) {
 					IWebSocketFrame r = itr.next();
 					if(r.isString()) {
@@ -129,10 +129,10 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public List<IWebSocketFrame> getNextStringFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			if(availableStringFrames > 0) {
 				List<IWebSocketFrame> ret = new ArrayList<>(availableStringFrames);
-				Iterator<IWebSocketFrame> itr = recievedPacketBuffer.iterator();
+				Iterator<IWebSocketFrame> itr = recievedFriendlyByteBuf.iterator();
 				while(itr.hasNext()) {
 					IWebSocketFrame r = itr.next();
 					if(r.isString()) {
@@ -150,9 +150,9 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public void clearStringFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			if(availableStringFrames > 0) {
-				Iterator<IWebSocketFrame> itr = recievedPacketBuffer.iterator();
+				Iterator<IWebSocketFrame> itr = recievedFriendlyByteBuf.iterator();
 				while(itr.hasNext()) {
 					IWebSocketFrame r = itr.next();
 					if(r.isString()) {
@@ -166,16 +166,16 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public int availableBinaryFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			return availableBinaryFrames;
 		}
 	}
 
 	@Override
 	public IWebSocketFrame getNextBinaryFrame() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			if(availableBinaryFrames > 0) {
-				Iterator<IWebSocketFrame> itr = recievedPacketBuffer.iterator();
+				Iterator<IWebSocketFrame> itr = recievedFriendlyByteBuf.iterator();
 				while(itr.hasNext()) {
 					IWebSocketFrame r = itr.next();
 					if(!r.isString()) {
@@ -194,10 +194,10 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public List<IWebSocketFrame> getNextBinaryFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			if(availableBinaryFrames > 0) {
 				List<IWebSocketFrame> ret = new ArrayList<>(availableBinaryFrames);
-				Iterator<IWebSocketFrame> itr = recievedPacketBuffer.iterator();
+				Iterator<IWebSocketFrame> itr = recievedFriendlyByteBuf.iterator();
 				while(itr.hasNext()) {
 					IWebSocketFrame r = itr.next();
 					if(!r.isString()) {
@@ -215,9 +215,9 @@ public abstract class AbstractWebSocketClient implements IWebSocketClient {
 
 	@Override
 	public void clearBinaryFrames() {
-		synchronized(recievedPacketBuffer) {
+		synchronized(recievedFriendlyByteBuf) {
 			if(availableBinaryFrames > 0) {
-				Iterator<IWebSocketFrame> itr = recievedPacketBuffer.iterator();
+				Iterator<IWebSocketFrame> itr = recievedFriendlyByteBuf.iterator();
 				while(itr.hasNext()) {
 					IWebSocketFrame r = itr.next();
 					if(!r.isString()) {

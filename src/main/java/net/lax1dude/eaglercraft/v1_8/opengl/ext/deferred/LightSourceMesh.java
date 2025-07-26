@@ -31,7 +31,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.IBufferGL;
 import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class LightSourceMesh {
 

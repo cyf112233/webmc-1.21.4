@@ -16,11 +16,15 @@
 
 package net.lax1dude.eaglercraft.v1_8.sp.server;
 
-import net.minecraft.world.biome.BiomeGenBase;
-import net.minecraft.world.gen.layer.GenLayer;
-import net.minecraft.world.gen.layer.IntCache;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 
-public class GenLayerEaglerRivers extends GenLayer {
+public class GenLayerEaglerRivers {
+    private final long worldGenSeed;
+    private final Object parent;
+    private final Holder<Biome> riverBiome;
 
 	private static final int[] pattern = new int[] {
 			0b111000011100001110000111,
@@ -51,58 +55,76 @@ public class GenLayerEaglerRivers extends GenLayer {
 
 	private static final int patternSize = 24;
 
-	public GenLayerEaglerRivers(long parLong1, GenLayer p) {
-		super(parLong1);
-		this.parent = p;
-	}
+    public GenLayerEaglerRivers(long seed, Object parent) {
+        this.worldGenSeed = seed;
+        this.parent = parent;
+        // Use the river biome directly
+        this.riverBiome = Holder.direct(Biomes.RIVER);
+    }
 
-	@Override
-	public int[] getInts(int x, int y, int w, int h) {
-		int[] aint = this.parent.getInts(x, y, w, h);
-		int[] aint1 = IntCache.getIntCache(w * h);
+    public int[] getInts(int x, int y, int w, int h) {
+        // Get the parent layer's biome data
+        int[] aint;
+        try {
+            aint = (int[]) parent.getClass().getMethod("getInts", int.class, int.class, int.class, int.class)
+                .invoke(parent, x, y, w, h);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get parent layer data", e);
+        }
+        
+        int[] aint1 = new int[w * h];
 
-		long a = worldGenSeed * 6364136223846793005L + 1442695040888963407L;
-		long b = ((a & 112104l) == 0) ? (((a & 534l) == 0) ? 1l : 15l) : 746l;
 		for (int yy = 0; yy < h; ++yy) {
 			for (int xx = 0; xx < w; ++xx) {
 				int i = xx + yy * w;
-				aint1[i] = aint[i];
-				long xxx = (long)(x + xx) & 0xFFFFFFFFl;
-				long yyy = (long)(y + yy) & 0xFFFFFFFFl;
+				int biomeId = aint[i];
+				long a = this.worldGenSeed * 6364136223846793005L + 1442695040888963407L;
+				long b = ((a & 112104L) == 0) ? (((a & 534L) == 0) ? 1L : 15L) : 746L;
+				
+				long xxx = (long)(x + xx) & 0xFFFFFFFFL;
+				long yyy = (long)(y + yy) & 0xFFFFFFFFL;
 				long hash = a + (xxx / patternSize);
 				hash *= hash * 6364136223846793005L + 1442695040888963407L;
 				hash += (yyy / patternSize);
 				hash *= hash * 6364136223846793005L + 1442695040888963407L;
 				hash += a;
-				if ((hash & b) == 0l) {
+				
+				if ((hash & b) == 0L) {
 					xxx %= (long)patternSize;
 					yyy %= (long)patternSize;
 					long tmp;
-					switch((int)((hash >>> 16l) & 3l)) {
+					switch((int)((hash >>> 16L) & 3L)) {
 					case 1:
 						tmp = xxx;
 						xxx = yyy;
-						yyy = (long)patternSize - tmp - 1l;
+						yyy = (long)patternSize - tmp - 1L;
 						break;
 					case 2:
 						tmp = xxx;
-						xxx = (long)patternSize - yyy - 1l;
+						xxx = (long)patternSize - yyy - 1L;
 						yyy = tmp;
 						break;
 					case 3:
 						tmp = xxx;
-						xxx = (long)patternSize - yyy - 1l;
-						yyy = (long)patternSize - tmp - 1l;
+						xxx = (long)patternSize - yyy - 1L;
+						yyy = (long)patternSize - tmp - 1L;
 						break;
 					}
 					if((pattern[(int)yyy] & (1 << (int)xxx)) != 0) {
-						aint1[i] = BiomeGenBase.river.biomeID;
+						// Use the river biome ID
+						biomeId = this.riverBiome.unwrapKey().get().location().hashCode();
 					}
 				}
+				aint1[i] = biomeId;
 			}
 		}
 
-		return aint1;
-	}
+        return aint1;
+    }
+
+    // Helper method to get the biome ID
+    private int getBiomeId(Holder<Biome> biome) {
+        return biome.unwrapKey().get().location().hashCode();
+    }
 
 }

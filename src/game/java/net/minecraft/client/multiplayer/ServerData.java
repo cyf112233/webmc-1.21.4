@@ -1,250 +1,182 @@
 package net.minecraft.client.multiplayer;
 
+import com.mojang.logging.LogUtils;
 import java.io.IOException;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.SharedConstants;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.status.ServerStatus;
+import net.minecraft.util.PngInfo;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.slf4j.Logger;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.IServerQuery;
-import net.lax1dude.eaglercraft.v1_8.internal.QueryResponse;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.profile.EaglerSkinTexture;
-import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.IChatComponent;
-import net.minecraft.util.ResourceLocation;
-
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
+@OnlyIn(Dist.CLIENT)
 public class ServerData {
-	public String serverName;
-	public String serverIP;
-	/**+
-	 * the string indicating number of players on and capacity of
-	 * the server that is shown on the server browser (i.e. "5/20"
-	 * meaning 5 slots used out of 20 slots total)
-	 */
-	public String populationInfo = "";
-	/**+
-	 * (better variable name would be 'hostname') server name as
-	 * displayed in the server browser's second line (grey text)
-	 */
-	public String serverMOTD = "";
-	/**+
-	 * last server ping that showed up in the server browser
-	 */
-	public long pingToServer = -1l;
-	public int version = 47;
-	/**+
-	 * Game version for this server.
-	 */
-	public String gameVersion = "1.8.8";
-	public boolean field_78841_f;
-	public String playerList;
-	private ServerData.ServerResourceMode resourceMode = ServerData.ServerResourceMode.PROMPT;
-	public boolean hideAddress = false;
-	private boolean field_181042_l;
-	public IServerQuery currentQuery = null;
-	public final ResourceLocation iconResourceLocation;
-	public EaglerSkinTexture iconTextureObject = null;
-	public long pingSentTime = -1l;
-	public boolean serverIconDirty = false;
-	public boolean hasPing = false;
-	public boolean serverIconEnabled = false;
-	public boolean isDefault = false;
-	public boolean enableCookies;
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final int MAX_ICON_SIZE = 1024;
+    public String name;
+    public String ip;
+    public Component status;
+    public Component motd;
+    @Nullable
+    public ServerStatus.Players players;
+    public long ping;
+    public int protocol = SharedConstants.getCurrentVersion().getProtocolVersion();
+    public Component version = Component.literal(SharedConstants.getCurrentVersion().getName());
+    public List<Component> playerList = Collections.emptyList();
+    private ServerData.ServerPackStatus packStatus = ServerData.ServerPackStatus.PROMPT;
+    @Nullable
+    private byte[] iconBytes;
+    private ServerData.Type type;
+    private ServerData.State state = ServerData.State.INITIAL;
 
-	private static final Logger logger = LogManager.getLogger("MOTDQuery");
+    public ServerData(String p_105375_, String p_105376_, ServerData.Type p_297678_) {
+        this.name = p_105375_;
+        this.ip = p_105376_;
+        this.type = p_297678_;
+    }
 
-	private static int serverTextureId = 0;
+    public CompoundTag write() {
+        CompoundTag compoundtag = new CompoundTag();
+        compoundtag.putString("name", this.name);
+        compoundtag.putString("ip", this.ip);
+        if (this.iconBytes != null) {
+            compoundtag.putString("icon", Base64.getEncoder().encodeToString(this.iconBytes));
+        }
 
-	public ServerData(String parString1, String parString2, boolean parFlag) {
-		this.serverName = parString1;
-		this.serverIP = parString2;
-		this.field_181042_l = parFlag;
-		this.iconResourceLocation = new ResourceLocation("eagler:servers/icons/tex_" + serverTextureId++);
-		this.enableCookies = EagRuntime.getConfiguration().isEnableServerCookies();
-	}
+        if (this.packStatus == ServerData.ServerPackStatus.ENABLED) {
+            compoundtag.putBoolean("acceptTextures", true);
+        } else if (this.packStatus == ServerData.ServerPackStatus.DISABLED) {
+            compoundtag.putBoolean("acceptTextures", false);
+        }
 
-	/**+
-	 * Returns an NBTTagCompound with the server's name, IP and
-	 * maybe acceptTextures.
-	 */
-	public NBTTagCompound getNBTCompound() {
-		NBTTagCompound nbttagcompound = new NBTTagCompound();
-		nbttagcompound.setString("name", this.serverName);
-		nbttagcompound.setString("ip", this.serverIP);
+        return compoundtag;
+    }
 
-		if (this.resourceMode == ServerData.ServerResourceMode.ENABLED) {
-			nbttagcompound.setBoolean("acceptTextures", true);
-		} else if (this.resourceMode == ServerData.ServerResourceMode.DISABLED) {
-			nbttagcompound.setBoolean("acceptTextures", false);
-		}
+    public ServerData.ServerPackStatus getResourcePackStatus() {
+        return this.packStatus;
+    }
 
-		nbttagcompound.setBoolean("hideAddress", this.hideAddress);
-		nbttagcompound.setBoolean("enableCookies", this.enableCookies);
+    public void setResourcePackStatus(ServerData.ServerPackStatus p_105380_) {
+        this.packStatus = p_105380_;
+    }
 
-		return nbttagcompound;
-	}
+    public static ServerData read(CompoundTag p_105386_) {
+        ServerData serverdata = new ServerData(p_105386_.getString("name"), p_105386_.getString("ip"), ServerData.Type.OTHER);
+        if (p_105386_.contains("icon", 8)) {
+            try {
+                byte[] abyte = Base64.getDecoder().decode(p_105386_.getString("icon"));
+                serverdata.setIconBytes(validateIcon(abyte));
+            } catch (IllegalArgumentException illegalargumentexception) {
+                LOGGER.warn("Malformed base64 server icon", (Throwable)illegalargumentexception);
+            }
+        }
 
-	public ServerData.ServerResourceMode getResourceMode() {
-		return this.resourceMode;
-	}
+        if (p_105386_.contains("acceptTextures", 99)) {
+            if (p_105386_.getBoolean("acceptTextures")) {
+                serverdata.setResourcePackStatus(ServerData.ServerPackStatus.ENABLED);
+            } else {
+                serverdata.setResourcePackStatus(ServerData.ServerPackStatus.DISABLED);
+            }
+        } else {
+            serverdata.setResourcePackStatus(ServerData.ServerPackStatus.PROMPT);
+        }
 
-	public void setResourceMode(ServerData.ServerResourceMode mode) {
-		this.resourceMode = mode;
-	}
+        return serverdata;
+    }
 
-	/**+
-	 * Takes an NBTTagCompound with 'name' and 'ip' keys, returns a
-	 * ServerData instance.
-	 */
-	public static ServerData getServerDataFromNBTCompound(NBTTagCompound nbtCompound) {
-		ServerData serverdata = new ServerData(nbtCompound.getString("name"), nbtCompound.getString("ip"), false);
+    @Nullable
+    public byte[] getIconBytes() {
+        return this.iconBytes;
+    }
 
-		if (nbtCompound.hasKey("acceptTextures", 1)) {
-			if (nbtCompound.getBoolean("acceptTextures")) {
-				serverdata.setResourceMode(ServerData.ServerResourceMode.ENABLED);
-			} else {
-				serverdata.setResourceMode(ServerData.ServerResourceMode.DISABLED);
-			}
-		} else {
-			serverdata.setResourceMode(ServerData.ServerResourceMode.PROMPT);
-		}
+    public void setIconBytes(@Nullable byte[] p_272760_) {
+        this.iconBytes = p_272760_;
+    }
 
-		if (nbtCompound.hasKey("hideAddress", 1)) {
-			serverdata.hideAddress = nbtCompound.getBoolean("hideAddress");
-		} else {
-			serverdata.hideAddress = false;
-		}
+    public boolean isLan() {
+        return this.type == ServerData.Type.LAN;
+    }
 
-		if (nbtCompound.hasKey("enableCookies", 1)) {
-			serverdata.enableCookies = nbtCompound.getBoolean("enableCookies");
-		} else {
-			serverdata.enableCookies = true;
-		}
+    public boolean isRealm() {
+        return this.type == ServerData.Type.REALM;
+    }
 
-		return serverdata;
-	}
+    public ServerData.Type type() {
+        return this.type;
+    }
 
-	public boolean func_181041_d() {
-		return this.field_181042_l;
-	}
+    public void copyNameIconFrom(ServerData p_233804_) {
+        this.ip = p_233804_.ip;
+        this.name = p_233804_.name;
+        this.iconBytes = p_233804_.iconBytes;
+    }
 
-	public void copyFrom(ServerData serverDataIn) {
-		this.serverIP = serverDataIn.serverIP;
-		this.serverName = serverDataIn.serverName;
-		this.setResourceMode(serverDataIn.getResourceMode());
-		this.hideAddress = serverDataIn.hideAddress;
-		this.field_181042_l = serverDataIn.field_181042_l;
-		this.enableCookies = serverDataIn.enableCookies;
-	}
+    public void copyFrom(ServerData p_105382_) {
+        this.copyNameIconFrom(p_105382_);
+        this.setResourcePackStatus(p_105382_.getResourcePackStatus());
+        this.type = p_105382_.type;
+    }
 
-	public static enum ServerResourceMode {
-		ENABLED("enabled"), DISABLED("disabled"), PROMPT("prompt");
+    public ServerData.State state() {
+        return this.state;
+    }
 
-		public static final ServerResourceMode[] _VALUES = values();
+    public void setState(ServerData.State p_336358_) {
+        this.state = p_336358_;
+    }
 
-		private final IChatComponent motd;
+    @Nullable
+    public static byte[] validateIcon(@Nullable byte[] p_301776_) {
+        if (p_301776_ != null) {
+            try {
+                PngInfo pnginfo = PngInfo.fromBytes(p_301776_);
+                if (pnginfo.width() <= 1024 && pnginfo.height() <= 1024) {
+                    return p_301776_;
+                }
+            } catch (IOException ioexception) {
+                LOGGER.warn("Failed to decode server icon", (Throwable)ioexception);
+            }
+        }
 
-		private ServerResourceMode(String parString2) {
-			this.motd = new ChatComponentTranslation("addServer.resourcePack." + parString2, new Object[0]);
-		}
+        return null;
+    }
 
-		public IChatComponent getMotd() {
-			return this.motd;
-		}
-	}
+    @OnlyIn(Dist.CLIENT)
+    public static enum ServerPackStatus {
+        ENABLED("enabled"),
+        DISABLED("disabled"),
+        PROMPT("prompt");
 
-	public void setMOTDFromQuery(QueryResponse pkt) {
-		try {
-			if (pkt.isResponseJSON()) {
-				JSONObject motdData = pkt.getResponseJSON();
-				JSONArray motd = motdData.getJSONArray("motd");
-				this.serverMOTD = motd.length() > 0
-						? (motd.length() > 1 ? motd.getString(0) + "\n" + motd.getString(1) : motd.getString(0))
-						: "";
-				int max = motdData.getInt("max");
-				if (max > 0) {
-					this.populationInfo = "" + motdData.getInt("online") + "/" + max;
-				} else {
-					this.populationInfo = "" + motdData.getInt("online");
-				}
-				this.playerList = null;
-				JSONArray players = motdData.optJSONArray("players");
-				if (players.length() > 0) {
-					StringBuilder builder = new StringBuilder();
-					for (int i = 0, l = players.length(); i < l; ++i) {
-						if (i > 0) {
-							builder.append('\n');
-						}
-						builder.append(players.getString(i));
-					}
-					this.playerList = builder.toString();
-				}
-				serverIconEnabled = motdData.getBoolean("icon");
-				if (!serverIconEnabled) {
-					if (iconTextureObject != null) {
-						Minecraft.getMinecraft().getTextureManager().deleteTexture(iconResourceLocation);
-						iconTextureObject = null;
-					}
-				}
-			} else {
-				throw new IOException("Response was not JSON!");
-			}
-		} catch (Throwable t) {
-			pingToServer = -1l;
-			logger.error("Could not decode QueryResponse from: {}", serverIP);
-			logger.error(t);
-		}
-	}
+        private final Component name;
 
-	public void setIconPacket(byte[] pkt) {
-		try {
-			if (!serverIconEnabled) {
-				throw new IOException("Unexpected icon packet on text-only MOTD");
-			}
-			if (pkt.length != 16384) {
-				throw new IOException("MOTD icon packet is the wrong size!");
-			}
-			int[] pixels = new int[4096];
-			for (int i = 0, j; i < 4096; ++i) {
-				j = i << 2;
-				pixels[i] = ((int) pkt[j] & 0xFF) | (((int) pkt[j + 1] & 0xFF) << 8) | (((int) pkt[j + 2] & 0xFF) << 16)
-						| (((int) pkt[j + 3] & 0xFF) << 24);
-			}
-			if (iconTextureObject != null) {
-				iconTextureObject.copyPixelsIn(pixels);
-			} else {
-				iconTextureObject = new EaglerSkinTexture(pixels, 64, 64);
-				Minecraft.getMinecraft().getTextureManager().loadTexture(iconResourceLocation, iconTextureObject);
-			}
-		} catch (Throwable t) {
-			pingToServer = -1l;
-			logger.error("Could not decode MOTD icon from: {}", serverIP);
-			logger.error(t);
-		}
-	}
+        private ServerPackStatus(final String p_105399_) {
+            this.name = Component.translatable("addServer.resourcePack." + p_105399_);
+        }
 
+        public Component getName() {
+            return this.name;
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static enum State {
+        INITIAL,
+        PINGING,
+        UNREACHABLE,
+        INCOMPATIBLE,
+        SUCCESSFUL;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static enum Type {
+        LAN,
+        REALM,
+        OTHER;
+    }
 }

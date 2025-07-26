@@ -24,19 +24,27 @@ import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.EaglerDeferredConfig;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.ShaderPackInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiListExtended;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.ChatFormatting;
+import net.minecraft.resources.ResourceLocation;
 
-public class GuiShaderConfigList extends GuiListExtended {
+public class GuiShaderConfigList extends ContainerObjectSelectionList<GuiShaderConfigList.Entry> {
+
+    public abstract static class Entry extends ContainerObjectSelectionList.Entry<Entry> {
+        public void drawEntry(int entryID, int x, int y, int getListWidth, int var5, int var6, int var7, boolean var8) {}
+        public boolean mousePressed(int var1, int var2, int var3, int var4, int var5, int var6) { return false; }
+        public void mouseReleased(int var1, int var2, int var3, int var4, int var5, int var6) {}
+        public void setSelected(int var1, int var2, int var3) {}
+    }
 
 	public static final ResourceLocation shaderPackIcon = new ResourceLocation("eagler:glsl/deferred/shader_pack_icon.png");
 
 	private final GuiShaderConfig screen;
 
-	private final List<IGuiListEntry> list = new ArrayList<>();
+	private final List<Entry> list = new ArrayList<>();
 
 	private static abstract class ShaderOption {
 
@@ -50,7 +58,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 
 		protected abstract String getDisplayValue();
 
-		protected abstract void toggleOption(GuiButton button, int dir);
+		protected abstract void toggleOption(net.minecraft.client.gui.components.Button button, int dir);
 
 		protected abstract boolean getDirty();
 
@@ -61,8 +69,8 @@ public class GuiShaderConfigList extends GuiListExtended {
 		String msg;
 		int i = 0;
 		while(true) {
-			if((msg = I18n.format(key + '.' + i)).equals(key + '.' + i)) {
-				if(!I18n.format(key + '.' + (i + 1)).equals(key + '.' + (i + 1))) {
+			if((msg = I18n.get(key + '.' + i)).equals(key + '.' + i)) {
+				if(!I18n.get(key + '.' + (i + 1)).equals(key + '.' + (i + 1))) {
 					msg = "";
 				}else {
 					break;
@@ -72,21 +80,21 @@ public class GuiShaderConfigList extends GuiListExtended {
 			++i;
 		}
 		if(ret.size() == 0) {
-			ret.add("" + EnumChatFormatting.GRAY + EnumChatFormatting.ITALIC + "(no description found)");
+			ret.add("" + ChatFormatting.GRAY + ChatFormatting.ITALIC + "(no description found)");
 		}
 		return ret;
 	}
 
 	private static String loadShaderLbl(String key) {
-		return I18n.format("shaders.gui.option." + key + ".label");
+		return I18n.get("shaders.gui.option." + key + ".label");
 	}
 
 	private static List<String> loadShaderDesc(String key) {
 		return loadDescription("shaders.gui.option." + key + ".desc");
 	}
 
-	private static String getColoredOnOff(boolean state, EnumChatFormatting on, EnumChatFormatting off) {
-		return state ? "" + on + I18n.format("options.on") : "" + off + I18n.format("options.off");
+	private static String getColoredOnOff(boolean state, ChatFormatting on, ChatFormatting off) {
+		return state ? "" + on + I18n.get("options.on") : "" + off + I18n.get("options.off");
 	}
 
 	private void addAllOptions(List<ShaderOption> opts) {
@@ -112,18 +120,18 @@ public class GuiShaderConfigList extends GuiListExtended {
 		this.list.add(new ListEntryPackInfo());
 		this.list.add(new ListEntrySpacing());
 		this.list.add(new ListEntrySpacing());
-		this.list.add(new ListEntryHeader(I18n.format("shaders.gui.headerTier1")));
+		this.list.add(new ListEntryHeader(I18n.get("shaders.gui.headerTier1")));
 		List<ShaderOption> opts = new ArrayList<>();
-		EaglerDeferredConfig conf = mcIn.gameSettings.deferredShaderConf;
+		EaglerDeferredConfig conf = mcIn.options.deferredShaderConf;
 		if(conf.shaderPackInfo.WAVING_BLOCKS) {
 			opts.add(new ShaderOption(loadShaderLbl("WAVING_BLOCKS"), loadShaderDesc("WAVING_BLOCKS")) {
 				private final boolean originalValue = conf.wavingBlocks;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.wavingBlocks, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.wavingBlocks, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.wavingBlocks = !conf.wavingBlocks;
 				}
 				@Override
@@ -137,10 +145,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.dynamicLights;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.dynamicLights, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.dynamicLights, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.dynamicLights = !conf.dynamicLights;
 				}
 				@Override
@@ -154,10 +162,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.ssao;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.ssao, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.ssao, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.ssao = !conf.ssao;
 				}
 				@Override
@@ -171,10 +179,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final int originalValue = conf.shadowsSun;
 				@Override
 				protected String getDisplayValue() {
-					return conf.shadowsSun == 0 ? "" + EnumChatFormatting.RED + "0" : "" + EnumChatFormatting.YELLOW + (1 << (conf.shadowsSun + 3));
+					return conf.shadowsSun == 0 ? "" + ChatFormatting.RED + "0" : "" + ChatFormatting.YELLOW + (1 << (conf.shadowsSun + 3));
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.shadowsSun = (conf.shadowsSun + dir + 5) % 5;
 				}
 				@Override
@@ -188,10 +196,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.useEnvMap;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.useEnvMap, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.useEnvMap, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.useEnvMap = !conf.useEnvMap;
 				}
 				@Override
@@ -205,10 +213,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.lensDistortion;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.lensDistortion, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.lensDistortion, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.lensDistortion = !conf.lensDistortion;
 				}
 				@Override
@@ -222,10 +230,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.subsurfaceScattering;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.subsurfaceScattering, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.subsurfaceScattering, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.subsurfaceScattering = !conf.subsurfaceScattering;
 				}
 				@Override
@@ -239,10 +247,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.lensFlares;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.lensFlares, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.lensFlares, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.lensFlares = !conf.lensFlares;
 				}
 				@Override
@@ -256,10 +264,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.fxaa;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.fxaa, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.fxaa, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.fxaa = !conf.fxaa;
 				}
 				@Override
@@ -270,16 +278,16 @@ public class GuiShaderConfigList extends GuiListExtended {
 		}
 		this.addAllOptions(opts);
 		opts.clear();
-		this.list.add(new ListEntryHeader(I18n.format("shaders.gui.headerTier2")));
+		this.list.add(new ListEntryHeader(I18n.get("shaders.gui.headerTier2")));
 		if(conf.shaderPackInfo.SHADOWS_COLORED) {
 			opts.add(new ShaderOption(loadShaderLbl("SHADOWS_COLORED"), loadShaderDesc("SHADOWS_COLORED")) {
 				private final boolean originalValue = conf.shadowsColored;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.shadowsColored, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.shadowsColored, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.shadowsColored = !conf.shadowsColored;
 				}
 				@Override
@@ -293,10 +301,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.shadowsSmoothed;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.shadowsSmoothed, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.shadowsSmoothed, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.shadowsSmoothed = !conf.shadowsSmoothed;
 				}
 				@Override
@@ -310,10 +318,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.realisticWater;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.realisticWater, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.realisticWater, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.realisticWater = !conf.realisticWater;
 				}
 				@Override
@@ -327,10 +335,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.bloom;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.bloom, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.bloom, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.bloom = !conf.bloom;
 				}
 				@Override
@@ -344,10 +352,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.lightShafts;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.lightShafts, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.lightShafts, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.lightShafts = !conf.lightShafts;
 				}
 				@Override
@@ -361,10 +369,10 @@ public class GuiShaderConfigList extends GuiListExtended {
 				private final boolean originalValue = conf.raytracing;
 				@Override
 				protected String getDisplayValue() {
-					return getColoredOnOff(conf.raytracing, EnumChatFormatting.GREEN, EnumChatFormatting.RED);
+					return getColoredOnOff(conf.raytracing, ChatFormatting.GREEN, ChatFormatting.RED);
 				}
 				@Override
-				protected void toggleOption(GuiButton button, int dir) {
+				protected void toggleOption(net.minecraft.client.gui.components.Button button, int dir) {
 					conf.raytracing = !conf.raytracing;
 				}
 				@Override
@@ -374,7 +382,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 			});
 		}
 		this.addAllOptions(opts);
-		setAllDisabled(!mcIn.gameSettings.shaders);
+		setAllDisabled(!mcIn.options.shaders);
 	}
 
 	public void setAllDisabled(boolean disable) {
@@ -396,7 +404,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 	}
 
 	@Override
-	public IGuiListEntry getListEntry(int var1) {
+	public Entry getEntry(int var1) {
 		return list.get(var1);
 	}
 
@@ -410,24 +418,38 @@ public class GuiShaderConfigList extends GuiListExtended {
 		return 225;
 	}
 
-	private class ListEntryPackInfo implements IGuiListEntry {
+	private class ListEntryPackInfo extends Entry {
+		@Override
+		public void render(PoseStack poseStack, int entryID, int y, int x, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
+			drawEntry(entryID, x, y, width, height, 0, 0, isMouseOver);
+		}
+
+		@Override
+		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			return mousePressed(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
+
+		@Override
+		public void mouseReleased(double mouseX, double mouseY, int button) {
+			mouseReleased(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
 
 		@Override
 		public void drawEntry(int entryID, int x, int y, int getListWidth, int var5, int var6, int var7, boolean var8) {
 			Minecraft mc = Minecraft.getMinecraft();
-			ShaderPackInfo info = mc.gameSettings.deferredShaderConf.shaderPackInfo;
+			ShaderPackInfo info = mc.options.deferredShaderConf.shaderPackInfo;
 			String packNameString = info.name;
-			int strWidth = mc.fontRendererObj.getStringWidth(packNameString) + 40;
+			int strWidth = mc.font.getStringWidth(packNameString) + 40;
 			if(strWidth < 210) {
 				strWidth = 210;
 			}
 			int x2 = strWidth > getListWidth * 2 ? x : x + (getListWidth - strWidth) / 2;
-			screen.drawString(mc.fontRendererObj, packNameString, x2 + 38, y + 3, 0xFFFFFF);
-			screen.drawString(mc.fontRendererObj, "Author: " + info.author, x2 + 38, y + 14, 0xBBBBBB);
-			screen.drawString(mc.fontRendererObj, "Version: " + info.vers, x2 + 38, y + 25, 0x888888);
-			List<String> descLines = mc.fontRendererObj.listFormattedStringToWidth(info.desc, strWidth);
+			screen.drawString(mc.font, packNameString, x2 + 38, y + 3, 0xFFFFFF);
+			screen.drawString(mc.font, "Author: " + info.author, x2 + 38, y + 14, 0xBBBBBB);
+			screen.drawString(mc.font, "Version: " + info.vers, x2 + 38, y + 25, 0x888888);
+			List<String> descLines = mc.font.listFormattedStringToWidth(info.desc, strWidth);
 			for(int i = 0, l = descLines.size(); i < l; ++i) {
-				screen.drawString(mc.fontRendererObj, descLines.get(i), x2, y + 43 + i * 9, 0xBBBBBB);
+				screen.drawString(mc.font, descLines.get(i), x2, y + 43 + i * 9, 0xBBBBBB);
 			}
 			mc.getTextureManager().bindTexture(shaderPackIcon);
 			GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -451,7 +473,21 @@ public class GuiShaderConfigList extends GuiListExtended {
 		
 	}
 
-	private class ListEntrySpacing implements IGuiListEntry {
+	private class ListEntrySpacing extends Entry {
+		@Override
+		public void render(PoseStack poseStack, int entryID, int y, int x, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
+			drawEntry(entryID, x, y, width, height, 0, 0, isMouseOver);
+		}
+
+		@Override
+		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			return mousePressed(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
+
+		@Override
+		public void mouseReleased(double mouseX, double mouseY, int button) {
+			mouseReleased(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
 
 		@Override
 		public void setSelected(int var1, int var2, int var3) {
@@ -475,7 +511,21 @@ public class GuiShaderConfigList extends GuiListExtended {
 		
 	}
 
-	private class ListEntryHeader implements IGuiListEntry {
+	private class ListEntryHeader extends Entry {
+		@Override
+		public void render(PoseStack poseStack, int entryID, int y, int x, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
+			drawEntry(entryID, x, y, width, height, 0, 0, isMouseOver);
+		}
+
+		@Override
+		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			return mousePressed(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
+
+		@Override
+		public void mouseReleased(double mouseX, double mouseY, int button) {
+			mouseReleased(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
 
 		private final String text;
 
@@ -490,7 +540,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 
 		@Override
 		public void drawEntry(int entryID, int x, int y, int getListWidth, int var5, int var6, int var7, boolean var8) {
-			screen.drawString(screen.getFontRenderer(), text, x, y + 10, 0xFFFFFF);
+			screen.drawString(screen.getFont(), text, x, y + 10, 0xFFFFFF);
 		}
 
 		@Override
@@ -505,30 +555,44 @@ public class GuiShaderConfigList extends GuiListExtended {
 		
 	}
 
-	private class ListEntryButtonRow implements IGuiListEntry {
+	private class ListEntryButtonRow extends Entry {
+		@Override
+		public void render(PoseStack poseStack, int entryID, int y, int x, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
+			drawEntry(entryID, x, y, width, height, 0, 0, isMouseOver);
+		}
+
+		@Override
+		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			return mousePressed(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
+
+		@Override
+		public void mouseReleased(double mouseX, double mouseY, int button) {
+			mouseReleased(0, (int)mouseX, (int)mouseY, 0, 0, button);
+		}
 
 		private final ShaderOption opt1;
 		private final ShaderOption opt2;
 		private final ShaderOption opt3;
 
-		private GuiButton button1;
-		private GuiButton button2;
-		private GuiButton button3;
+		private net.minecraft.client.gui.components.Button button1;
+		private net.minecraft.client.gui.components.Button button2;
+		private net.minecraft.client.gui.components.Button button3;
 
 		private ListEntryButtonRow(ShaderOption opt1, ShaderOption opt2, ShaderOption opt3) {
 			this.opt1 = opt1;
 			this.opt2 = opt2;
 			this.opt3 = opt3;
 			if(this.opt1 != null) {
-				this.button1 = new GuiButton(0, 0, 0, 73, 20, this.opt1.label + ": " + this.opt1.getDisplayValue());
+				this.button1 = new net.minecraft.client.gui.components.Button(0, 0, 0, 73, 20, this.opt1.label + ": " + this.opt1.getDisplayValue());
 				this.button1.fontScale = 0.78f - (this.opt1.label.length() * 0.01f);
 			}
 			if(this.opt2 != null) {
-				this.button2 = new GuiButton(0, 0, 0, 73, 20, this.opt2.label + ": " + this.opt2.getDisplayValue());
+				this.button2 = new net.minecraft.client.gui.components.Button(0, 0, 0, 73, 20, this.opt2.label + ": " + this.opt2.getDisplayValue());
 				this.button2.fontScale = 0.78f - (this.opt2.label.length() * 0.01f);
 			}
 			if(this.opt3 != null) {
-				this.button3 = new GuiButton(0, 0, 0, 73, 20, this.opt3.label + ": " + this.opt3.getDisplayValue());
+				this.button3 = new net.minecraft.client.gui.components.Button(0, 0, 0, 73, 20, this.opt3.label + ": " + this.opt3.getDisplayValue());
 				this.button3.fontScale = 0.78f - (this.opt3.label.length() * 0.01f);
 			}
 		}
@@ -574,7 +638,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 					if(this.button1.mousePressed(mc, var2, var3)) {
 						this.opt1.toggleOption(this.button1, var4 == 1 ? -1 : 1);
 						this.button1.displayString = (this.opt1.getDirty() ? "*" : "") + this.opt1.label + ": " + this.opt1.getDisplayValue();
-						this.button1.playPressSound(mc.getSoundHandler());
+						this.button1.playPressSound(mc.getSoundManager());
 					}
 				}
 			}
@@ -583,7 +647,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 					if(this.button2.mousePressed(mc, var2, var3)) {
 						this.opt2.toggleOption(this.button2, var4 == 1 ? -1 : 1);
 						this.button2.displayString = (this.opt2.getDirty() ? "*" : "") + this.opt2.label + ": " + this.opt2.getDisplayValue();
-						this.button2.playPressSound(mc.getSoundHandler());
+						this.button2.playPressSound(mc.getSoundManager());
 					}
 				}
 			}
@@ -592,7 +656,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 					if(this.button3.mousePressed(mc, var2, var3)) {
 						this.opt3.toggleOption(this.button3, var4 == 1 ? -1 : 1);
 						this.button3.displayString = (this.opt3.getDirty() ? "*" : "") + this.opt3.label + ": " + this.opt3.getDisplayValue();
-						this.button3.playPressSound(mc.getSoundHandler());
+						this.button3.playPressSound(mc.getSoundManager());
 					}
 				}
 			}
@@ -633,7 +697,7 @@ public class GuiShaderConfigList extends GuiListExtended {
 		for(int i = 0, l = msg.size(); i < l; ++i) {
 			String s = msg.get(i);
 			if(s.length() > 0) {
-				tooltipList.addAll(screen.getFontRenderer().listFormattedStringToWidth(s, width));
+				tooltipList.addAll(screen.getFont().listFormattedStringToWidth(s, width));
 			}else {
 				tooltipList.add("");
 			}

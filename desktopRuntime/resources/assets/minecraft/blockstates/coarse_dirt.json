@@ -1,5 +1,7 @@
 {
-    "variants": {
-        "normal": { "model": "coarse_dirt" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/coarse_dirt"
     }
+  }
 }

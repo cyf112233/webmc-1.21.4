@@ -23,34 +23,34 @@ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program.ShaderSource;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 
-public class GuiShaderConfig extends GuiScreen {
+public class GuiShaderConfig extends Screen {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	boolean shaderStartState = false;
 
-	private final GuiScreen parent;
+	private final Screen parent;
 	private GuiShaderConfigList listView;
 
 	private String title;
-	private GuiButton enableDisableButton;
+	private net.minecraft.client.gui.components.Button enableDisableButton;
 
-	public GuiShaderConfig(GuiScreen parent) {
+	public GuiShaderConfig(Screen parent) {
 		this.parent = parent;
 		this.shaderStartState = Minecraft.getMinecraft().gameSettings.shaders;
 	}
 
 	public void initGui() {
-		this.title = I18n.format("shaders.gui.title");
+		this.title = I18n.get("shaders.gui.title");
 		this.buttonList.clear();
-		this.buttonList.add(enableDisableButton = new GuiButton(0, width / 2 - 155, height - 30, 150, 20, I18n.format("shaders.gui.enable")
-				+ ": " + (mc.gameSettings.shaders ? I18n.format("gui.yes") : I18n.format("gui.no"))));
-		this.buttonList.add(new GuiButton(1, width / 2 + 5, height - 30, 150, 20, I18n.format("gui.done")));
+		this.buttonList.add(enableDisableButton = new net.minecraft.client.gui.components.Button(0, width / 2 - 155, height - 30, 150, 20, I18n.get("shaders.gui.enable")
+				+ ": " + (mc.options.shaders ? I18n.get("gui.yes") : I18n.get("gui.no"))));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(1, width / 2 + 5, height - 30, 150, 20, I18n.get("gui.done")));
 		if(listView == null) {
 			this.listView = new GuiShaderConfigList(this, mc);
 		}else {
@@ -58,37 +58,37 @@ public class GuiShaderConfig extends GuiScreen {
 		}
 	}
 
-	protected void actionPerformed(GuiButton btn) {
+	protected void actionPerformed(net.minecraft.client.gui.components.Button btn) {
 		if(btn.id == 0) {
-			mc.gameSettings.shaders = !mc.gameSettings.shaders;
-			listView.setAllDisabled(!mc.gameSettings.shaders);
-			enableDisableButton.displayString = I18n.format("shaders.gui.enable") + ": "
-					+ (mc.gameSettings.shaders ? I18n.format("gui.yes") : I18n.format("gui.no"));
+			mc.options.shaders = !mc.options.shaders;
+			listView.setAllDisabled(!mc.options.shaders);
+			enableDisableButton.displayString = I18n.get("shaders.gui.enable") + ": "
+					+ (mc.options.shaders ? I18n.get("gui.yes") : I18n.get("gui.no"));
 		}else if(btn.id == 1) {
-			mc.displayGuiScreen(parent);
+			mc.displayScreen(parent);
 		}
 	}
 
 	public void onGuiClosed() {
-		if(shaderStartState != mc.gameSettings.shaders || listView.isDirty()) {
-			mc.gameSettings.saveOptions();
-			if(shaderStartState != mc.gameSettings.shaders) {
+		if(shaderStartState != mc.options.shaders || listView.isDirty()) {
+			mc.options.saveOptions();
+			if(shaderStartState != mc.options.shaders) {
 				mc.loadingScreen.eaglerShowRefreshResources();
 				mc.refreshResources();
 			}else {
 				logger.info("Reloading shaders...");
 				try {
-					mc.gameSettings.deferredShaderConf.reloadShaderPackInfo(mc.getResourceManager());
+					mc.options.deferredShaderConf.reloadShaderPackInfo(mc.getResourceManager());
 				}catch(IOException ex) {
 					logger.info("Could not reload shader pack info!");
 					logger.info(ex);
 					logger.info("Shaders have been disabled");
-					mc.gameSettings.shaders = false;
+					mc.options.shaders = false;
 					mc.refreshResources();
 					return;
 				}
 
-				if(mc.gameSettings.shaders) {
+				if(mc.options.shaders) {
 					ShaderSource.clearCache();
 				}
 
@@ -122,7 +122,7 @@ public class GuiShaderConfig extends GuiScreen {
 	public void drawScreen(int i, int j, float f) {
 		this.drawBackground(0);
 		listView.drawScreen(i, j, f);
-		drawCenteredString(this.fontRendererObj, title, this.width / 2, 15, 16777215);
+		drawCenteredString(this.font, title, this.width / 2, 15, 16777215);
 		super.drawScreen(i, j, f);
 		listView.postRender(i, j, f);
 	}
@@ -131,7 +131,7 @@ public class GuiShaderConfig extends GuiScreen {
 		drawHoveringText(txt, x, y);
 	}
 
-	FontRenderer getFontRenderer() {
+	Font getFont() {
 		return fontRendererObj;
 	}
 

@@ -21,14 +21,14 @@ import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessageHandler;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.*;
 import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerMinecraftServer;
 import net.lax1dude.eaglercraft.v1_8.sp.server.voice.IntegratedVoiceService;
-import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 public class ServerV3MessageHandler implements GameMessageHandler {
 
-	private final NetHandlerPlayServer netHandler;
+	private final ServerGamePacketListenerImpl netHandler;
 	private final EaglerMinecraftServer server;
 
-	public ServerV3MessageHandler(NetHandlerPlayServer netHandler) {
+	public ServerV3MessageHandler(ServerGamePacketListenerImpl netHandler) {
 		this.netHandler = netHandler;
 		this.server = (EaglerMinecraftServer)netHandler.serverController;
 	}

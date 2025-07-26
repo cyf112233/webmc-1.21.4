@@ -26,15 +26,11 @@ import org.apache.commons.lang3.StringUtils;
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.event.HoverEvent;
-import net.minecraft.util.ChatComponentScore;
-import net.minecraft.util.ChatComponentSelector;
-import net.minecraft.util.ChatComponentStyle;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.IChatComponent;
-import net.minecraft.util.MathHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.Mth;
 
 public class ProfanityFilter {
 
@@ -82,9 +78,9 @@ public class ProfanityFilter {
 		logger.info("Processed {} entries after {}ms", j, (EagRuntime.steadyTimeMillis() - start));
 	}
 
-	public IChatComponent profanityFilterChatComponent(IChatComponent componentIn) {
+	public Component profanityFilterChatComponent(Component componentIn) {
 		if(componentIn == null) return null;
-		IChatComponent cmp = null;
+		Component cmp = null;
 		//long start = System.nanoTime();
 		try {
 			cmp = profanityFilterChatComponent0(componentIn);
@@ -96,57 +92,44 @@ public class ProfanityFilter {
 		return cmp != null ? cmp : componentIn;
 	}
 
-	protected IChatComponent profanityFilterChatComponent0(IChatComponent componentIn) {
-		if(componentIn instanceof ChatComponentStyle) {
+	protected Component profanityFilterChatComponent0(Component componentIn) {
+		if(componentIn instanceof MutableComponent) {
 			boolean flag = false;
-			if(componentIn instanceof ChatComponentText) {
-				ChatComponentText comp = (ChatComponentText)componentIn;
-				String str = comp.getChatComponentText_TextValue();
-				if(StringUtils.isEmpty(str) && componentIn.getSiblings().isEmpty()) {
-					return componentIn;
-				}
-				str = profanityFilterString0(str);
-				if(str != null) {
-					IChatComponent replacedComponent = new ChatComponentText(str);
-					replacedComponent.setChatStyle(comp.getChatStyleIfPresent());
-					replacedComponent.getSiblings().addAll(componentIn.getSiblings());
-					componentIn = replacedComponent;
-					flag = true;
-				}
-			}else if(componentIn instanceof ChatComponentTranslation) {
-				ChatComponentTranslation comp = (ChatComponentTranslation)componentIn;
-				IChatComponent replacedComponent = new ChatComponentTranslation(comp.getKey(), profanityFilterFormatArgs(comp.getFormatArgs()));
-				replacedComponent.setChatStyle(comp.getChatStyleIfPresent());
+			MutableComponent comp = (MutableComponent)componentIn;
+			String str = comp.getString();
+			if(StringUtils.isBlank(str) && componentIn.getSiblings().isEmpty()) {
+				return componentIn;
+			}
+			String filteredStr = profanityFilterString0(str);
+			if(filteredStr != null) {
+				MutableComponent replacedComponent = Component.literal(filteredStr);
+				replacedComponent.setStyle(comp.getStyle());
 				replacedComponent.getSiblings().addAll(componentIn.getSiblings());
 				componentIn = replacedComponent;
 				flag = true;
 			}
-			List<IChatComponent> siblings = componentIn.getSiblings();
+			List<Component> siblings = componentIn.getSiblings();
 			for(int i = 0, l = siblings.size(); i < l; ++i) {
-				IChatComponent cmp = profanityFilterChatComponent0(siblings.get(i));
-				if(cmp != null) {
+				Component filteredSibling = profanityFilterChatComponent0(siblings.get(i));
+				if(filteredSibling != null) {
 					if(!flag) {
-						componentIn = shallowCopy(componentIn);
+						componentIn = componentIn.copy();
 						siblings = componentIn.getSiblings();
 						flag = true;
 					}
-					siblings.set(i, cmp);
+					siblings.set(i, filteredSibling);
 				}
 			}
-			ChatStyle styleOpt = ((ChatComponentStyle)componentIn).getChatStyleIfPresent();
-			if(styleOpt != null) {
-				HoverEvent hoverEvent = styleOpt.getChatHoverEvent();
-				if(hoverEvent != null) {
-					HoverEvent filteredHoverEvent = profanityFilterHoverEvent(hoverEvent);
-					if(filteredHoverEvent != null) {
-						if(!flag) {
-							componentIn = shallowCopy(componentIn);
-							flag = true;
-						}
-						ChatStyle newStyle = styleOpt.createShallowCopy();
-						newStyle.setChatHoverEvent(filteredHoverEvent);
-						componentIn.setChatStyle(newStyle);
+			Style style = componentIn.getStyle();
+			HoverEvent hoverEvent = style.getHoverEvent();
+			if(hoverEvent != null) {
+				HoverEvent filteredHoverEvent = profanityFilterHoverEvent(hoverEvent);
+				if(filteredHoverEvent != null) {
+					if(!flag) {
+						componentIn = componentIn.copy();
+						flag = true;
 					}
+					componentIn.setStyle(style.withHoverEvent(filteredHoverEvent));
 				}
 			}
 			return flag ? componentIn : null;
@@ -181,7 +164,7 @@ public class ProfanityFilter {
 
 	protected HoverEvent profanityFilterHoverEvent(HoverEvent evtIn) {
 		if(evtIn.getAction() == HoverEvent.Action.SHOW_TEXT) {
-			IChatComponent filtered = evtIn.getValue();
+			Component filtered = evtIn.getValue(HoverEvent.Action.SHOW_TEXT);
 			if(filtered != null) {
 				filtered = profanityFilterChatComponent0(filtered);
 				if(filtered != null) {
@@ -192,36 +175,30 @@ public class ProfanityFilter {
 		return null;
 	}
 
-	private static IChatComponent shallowCopy(IChatComponent comp) {
-		if(comp instanceof ChatComponentStyle) {
-			if(comp instanceof ChatComponentText) {
-				ChatComponentText old = (ChatComponentText)comp;
-				IChatComponent ret = new ChatComponentText(old.getChatComponentText_TextValue());
-				ret.setChatStyle(old.getChatStyleIfPresent());
-				ret.getSiblings().addAll(comp.getSiblings());
-				return ret;
-			}else if(comp instanceof ChatComponentTranslation) {
-				ChatComponentTranslation old = (ChatComponentTranslation)comp;
-				IChatComponent ret = new ChatComponentTranslation(old.getKey(), old.getFormatArgs());
-				ret.setChatStyle(old.getChatStyleIfPresent());
-				ret.getSiblings().addAll(comp.getSiblings());
-				return ret;
-			}else if(comp instanceof ChatComponentScore) {
-				ChatComponentScore old = (ChatComponentScore)comp;
-				IChatComponent ret = new ChatComponentScore(old.getName(), old.getObjective());
-				ret.setChatStyle(old.getChatStyleIfPresent());
-				ret.getSiblings().addAll(comp.getSiblings());
-				return ret;
-			}else if(comp instanceof ChatComponentSelector) {
-				ChatComponentSelector old = (ChatComponentSelector)comp;
-				IChatComponent ret = new ChatComponentSelector(old.getSelector());
-				ret.setChatStyle(old.getChatStyleIfPresent());
-				ret.getSiblings().addAll(comp.getSiblings());
-				return ret;
-			}
-		}
-		return comp.createCopy();
-	}
+	private static MutableComponent shallowCopy(Component comp) {
+        if (comp instanceof MutableComponent) {
+            MutableComponent copy;
+            Style style = comp.getStyle();
+            
+            // Create a new component with the same content
+            if (comp.getSiblings().isEmpty() && comp.getContents() instanceof net.minecraft.network.chat.contents.PlainTextContents) {
+                copy = Component.literal(comp.getString());
+            } else if (comp.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents) {
+                copy = Component.translatable(comp.getString());
+            } else {
+                copy = Component.literal(comp.getString());
+            }
+            
+            // Copy style and siblings
+            copy.setStyle(style);
+            for (Component sibling : comp.getSiblings()) {
+                copy.append(shallowCopy(sibling));
+            }
+            
+            return copy;
+        }
+        return (MutableComponent) comp.copy();
+    }
 
 	private static final char[] stars = new char[] { '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*',
 			'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*',
@@ -351,7 +328,7 @@ public class ProfanityFilter {
 			return stringIn;
 		}
 		StringBuilder fixed = new StringBuilder(stringIn.substring(0, start));
-		fixed.append(stars, 0, MathHelper.clamp_int(len, 1, stars.length));
+		fixed.append(stars, 0, Mth.clamp_int(len, 1, stars.length));
 		fixed.append(stringIn, end, stringIn.length());
 		return fixed.toString();
 	}

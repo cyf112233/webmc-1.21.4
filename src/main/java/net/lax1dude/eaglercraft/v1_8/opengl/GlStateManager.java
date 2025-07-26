@@ -23,7 +23,7 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector3f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
-import net.minecraft.util.MathHelper;
+import net.minecraft.util.Mth;
 
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
@@ -276,7 +276,7 @@ public class GlStateManager {
 		paramVector4.w = (float)0.0f;
 		Matrix4f.transform(modelMatrixStack[modelMatrixStackPointer], paramVector4, paramVector4);
 		Vector4f dest = stateLightsStack[stateLightsStackPointer][light];
-		float len = MathHelper.sqrt_float(paramVector4.x * paramVector4.x
+		float len = Mth.sqrt_float(paramVector4.x * paramVector4.x
 				+ paramVector4.y * paramVector4.y
 				+ paramVector4.z * paramVector4.z);
 		dest.x = paramVector4.x / len;
@@ -956,8 +956,8 @@ public class GlStateManager {
 	}
 
 	private static void _glRotatefX(Matrix4f mat, float angle) {
-		float sin = MathHelper.sin(angle);
-		float cos = MathHelper.cos(angle);
+		float sin = Mth.sin(angle);
+		float cos = Mth.cos(angle);
 		float lm10 = mat.m10, lm11 = mat.m11, lm12 = mat.m12, lm13 = mat.m13, lm20 = mat.m20, lm21 = mat.m21,
 				lm22 = mat.m22, lm23 = mat.m23;
 		mat.m20 = lm10 * -sin + lm20 * cos;
@@ -971,8 +971,8 @@ public class GlStateManager {
 	}
 
 	private static void _glRotatefY(Matrix4f mat, float angle) {
-		float sin = MathHelper.sin(angle);
-		float cos = MathHelper.cos(angle);
+		float sin = Mth.sin(angle);
+		float cos = Mth.cos(angle);
 		float nm00 = mat.m00 * cos + mat.m20 * -sin;
 		float nm01 = mat.m01 * cos + mat.m21 * -sin;
 		float nm02 = mat.m02 * cos + mat.m22 * -sin;
@@ -988,8 +988,8 @@ public class GlStateManager {
 	}
 
 	private static void _glRotatefZ(Matrix4f mat, float angle) {
-		float dirX = MathHelper.sin(angle);
-		float dirY = MathHelper.cos(angle);
+		float dirX = Mth.sin(angle);
+		float dirY = Mth.cos(angle);
 		float nm00 = mat.m00 * dirY + mat.m10 * dirX;
 		float nm01 = mat.m01 * dirY + mat.m11 * dirX;
 		float nm02 = mat.m02 * dirY + mat.m12 * dirX;
@@ -1005,8 +1005,8 @@ public class GlStateManager {
 	}
 
 	private static void _glRotatef(Matrix4f mat, float angle, float x, float y, float z) {
-		float s = MathHelper.sin(angle);
-		float c = MathHelper.cos(angle);
+		float s = Mth.sin(angle);
+		float c = Mth.cos(angle);
 		float C = 1.0f - c;
 		float xx = x * x, xy = x * y, xz = x * z;
 		float yy = y * y, yz = y * z;

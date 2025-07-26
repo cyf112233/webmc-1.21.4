@@ -1,66 +1,62 @@
 package net.minecraft.world;
 
-import net.minecraft.util.MathHelper;
+import javax.annotation.concurrent.Immutable;
+import net.minecraft.util.Mth;
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
+@Immutable
 public class DifficultyInstance {
-	private final EnumDifficulty worldDifficulty;
-	private final float additionalDifficulty;
+    private static final float DIFFICULTY_TIME_GLOBAL_OFFSET = -72000.0F;
+    private static final float MAX_DIFFICULTY_TIME_GLOBAL = 1440000.0F;
+    private static final float MAX_DIFFICULTY_TIME_LOCAL = 3600000.0F;
+    private final Difficulty base;
+    private final float effectiveDifficulty;
 
-	public DifficultyInstance(EnumDifficulty worldDifficulty, long worldTime, long chunkInhabitedTime,
-			float moonPhaseFactor) {
-		this.worldDifficulty = worldDifficulty;
-		this.additionalDifficulty = this.calculateAdditionalDifficulty(worldDifficulty, worldTime, chunkInhabitedTime,
-				moonPhaseFactor);
-	}
+    public DifficultyInstance(Difficulty p_19044_, long p_19045_, long p_19046_, float p_19047_) {
+        this.base = p_19044_;
+        this.effectiveDifficulty = this.calculateDifficulty(p_19044_, p_19045_, p_19046_, p_19047_);
+    }
 
-	public float getAdditionalDifficulty() {
-		return this.additionalDifficulty;
-	}
+    public Difficulty getDifficulty() {
+        return this.base;
+    }
 
-	public float getClampedAdditionalDifficulty() {
-		return this.additionalDifficulty < 2.0F ? 0.0F
-				: (this.additionalDifficulty > 4.0F ? 1.0F : (this.additionalDifficulty - 2.0F) / 2.0F);
-	}
+    public float getEffectiveDifficulty() {
+        return this.effectiveDifficulty;
+    }
 
-	private float calculateAdditionalDifficulty(EnumDifficulty difficulty, long worldTime, long chunkInhabitedTime,
-			float moonPhaseFactor) {
-		if (difficulty == EnumDifficulty.PEACEFUL) {
-			return 0.0F;
-		} else {
-			boolean flag = difficulty == EnumDifficulty.HARD;
-			float f = 0.75F;
-			float f1 = MathHelper.clamp_float(((float) worldTime + -72000.0F) / 1440000.0F, 0.0F, 1.0F) * 0.25F;
-			f = f + f1;
-			float f2 = 0.0F;
-			f2 = f2 + MathHelper.clamp_float((float) chunkInhabitedTime / 3600000.0F, 0.0F, 1.0F)
-					* (flag ? 1.0F : 0.75F);
-			f2 = f2 + MathHelper.clamp_float(moonPhaseFactor * 0.25F, 0.0F, f1);
-			if (difficulty == EnumDifficulty.EASY) {
-				f2 *= 0.5F;
-			}
+    public boolean isHard() {
+        return this.effectiveDifficulty >= (float)Difficulty.HARD.ordinal();
+    }
 
-			f = f + f2;
-			return (float) difficulty.getDifficultyId() * f;
-		}
-	}
+    public boolean isHarderThan(float p_19050_) {
+        return this.effectiveDifficulty > p_19050_;
+    }
+
+    public float getSpecialMultiplier() {
+        if (this.effectiveDifficulty < 2.0F) {
+            return 0.0F;
+        } else {
+            return this.effectiveDifficulty > 4.0F ? 1.0F : (this.effectiveDifficulty - 2.0F) / 2.0F;
+        }
+    }
+
+    private float calculateDifficulty(Difficulty p_19052_, long p_19053_, long p_19054_, float p_19055_) {
+        if (p_19052_ == Difficulty.PEACEFUL) {
+            return 0.0F;
+        } else {
+            boolean flag = p_19052_ == Difficulty.HARD;
+            float f = 0.75F;
+            float f1 = Mth.clamp(((float)p_19053_ + -72000.0F) / 1440000.0F, 0.0F, 1.0F) * 0.25F;
+            f += f1;
+            float f2 = 0.0F;
+            f2 += Mth.clamp((float)p_19054_ / 3600000.0F, 0.0F, 1.0F) * (flag ? 1.0F : 0.75F);
+            f2 += Mth.clamp(p_19055_ * 0.25F, 0.0F, f1);
+            if (p_19052_ == Difficulty.EASY) {
+                f2 *= 0.5F;
+            }
+
+            f += f2;
+            return (float)p_19052_.getId() * f;
+        }
+    }
 }

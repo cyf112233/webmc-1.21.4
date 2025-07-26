@@ -32,15 +32,14 @@ import net.lax1dude.eaglercraft.v1_8.opengl.InstancedParticleRenderer;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.AbstractAcceleratedEffectRenderer;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights.program.DynamicLightsAccelParticleShader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GLAllocation;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.MathHelper;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.util.Mth;
 
 public class DynamicLightsAcceleratedEffectRenderer extends AbstractAcceleratedEffectRenderer {
 
 	private static final Logger logger = LogManager.getLogger("DynamicLightsAcceleratedEffectRenderer");
 
-	private ByteBuffer particleBuffer = null;
+	private net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer particleBuffer = null;
 	private int particleCount = 0;
 	private boolean particlesHasOverflowed = false;
 
@@ -66,7 +65,7 @@ public class DynamicLightsAcceleratedEffectRenderer extends AbstractAcceleratedE
 		destroy();
 
 		if(DynamicLightsPipelineCompiler.matrixCopyBuffer == null) {
-			DynamicLightsPipelineCompiler.matrixCopyBuffer = GLAllocation.createDirectFloatBuffer(16);
+			DynamicLightsPipelineCompiler.matrixCopyBuffer = ByteBuffer.allocateDirect(16 * Float.BYTES).asFloatBuffer();
 		}
 
 		shaderProgram = DynamicLightsAccelParticleShader.compile();
@@ -173,11 +172,11 @@ public class DynamicLightsAcceleratedEffectRenderer extends AbstractAcceleratedE
 
 		Entity et = Minecraft.getMinecraft().getRenderViewEntity();
 		if(et != null) {
-			f1 = MathHelper.cos(et.rotationYaw * 0.017453292F);
-			f2 = MathHelper.sin(et.rotationYaw * 0.017453292F);
-			f3 = -f2 * MathHelper.sin(et.rotationPitch * 0.017453292F);
-			f4 = f1 * MathHelper.sin(et.rotationPitch * 0.017453292F);
-			f5 = MathHelper.cos(et.rotationPitch * 0.017453292F);
+			f1 = Mth.cos(et.getYRot() * 0.017453292F);
+			f2 = Mth.sin(et.getYRot() * 0.017453292F);
+			f3 = -f2 * Mth.sin(et.getXRot() * 0.017453292F);
+			f4 = f1 * Mth.sin(et.getXRot() * 0.017453292F);
+			f5 = Mth.cos(et.getXRot() * 0.017453292F);
 		}
 	}
 
@@ -193,7 +192,7 @@ public class DynamicLightsAcceleratedEffectRenderer extends AbstractAcceleratedE
 			return;
 		}
 		++particleCount;
-		ByteBuffer buf = particleBuffer;
+		net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer buf = particleBuffer;
 		buf.putFloat(posX);
 		buf.putFloat(posY);
 		buf.putFloat(posZ);

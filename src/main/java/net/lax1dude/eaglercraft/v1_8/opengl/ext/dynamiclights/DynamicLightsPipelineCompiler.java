@@ -24,7 +24,7 @@ import net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionSta
 import net.lax1dude.eaglercraft.v1_8.opengl.IExtPipelineCompiler;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program.ShaderSource;
 import net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights.program.DynamicLightsExtPipelineShader;
-import net.minecraft.client.renderer.GLAllocation;
+import java.nio.ByteBuffer;
 
 public class DynamicLightsPipelineCompiler implements IExtPipelineCompiler {
 
@@ -47,7 +47,7 @@ public class DynamicLightsPipelineCompiler implements IExtPipelineCompiler {
 	@Override
 	public String[] getShaderSource(int stateCoreBits, int stateExtBits, Object[] userPointer) {
 		if(matrixCopyBuffer == null) {
-			matrixCopyBuffer = GLAllocation.createDirectFloatBuffer(16);
+			matrixCopyBuffer = ByteBuffer.allocateDirect(16 * Float.BYTES).asFloatBuffer();
 		}
 		userPointer[0] = new PipelineInstance(stateCoreBits, stateExtBits);
 		return new String[] {

@@ -46,7 +46,7 @@ public class EaglercraftVersion {
 	
 	public static final EaglercraftUUID clientBrandUUID = EagUtils.makeClientBrandUUID(projectForkName);
 
-	public static final EaglercraftUUID legacyClientUUIDInSharedWorld = EagUtils.makeClientBrandUUIDLegacy(projectOriginName);
+	public static final EaglercraftUUID legacyClientUUIDInSharedLevel = EagUtils.makeClientBrandUUIDLegacy(projectOriginName);
 	
 	
 	// Miscellaneous variables:
@@ -66,7 +66,7 @@ public class EaglercraftVersion {
 	public static final String screenRecordingFilePrefix = projectOriginName + " "
 			+ projectOriginRevision + "-" + projectOriginVersion;
 
-	public static final long demoWorldSeed = (long) "North Carolina".hashCode();
+	public static final long demoLevelSeed = (long) "North Carolina".hashCode();
 
 	public static final boolean mainMenuEnableGithubButton = false;
 

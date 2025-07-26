@@ -18,7 +18,7 @@ package net.lax1dude.eaglercraft.v1_8.notifications;
 
 import java.util.List;
 
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.chat.Component;
 
 public class CachedNotifBadgeTexture {
 
@@ -27,12 +27,12 @@ public class CachedNotifBadgeTexture {
 	public final int width;
 	public final int height;
 	public final List<ClickEventZone> cursorEvents;
-	public final IChatComponent rootClickEvent;
+	public final Component rootClickEvent;
 	public final boolean hasClickEvents;
 	public final boolean hasHoverEvents;
 
 	protected CachedNotifBadgeTexture(int glTexture, int scaleFactor, int width, int height,
-			List<ClickEventZone> cursorEvents, IChatComponent rootClickEvent, boolean hasClickEvents,
+			List<ClickEventZone> cursorEvents, Component rootClickEvent, boolean hasClickEvents,
 			boolean hasHoverEvents) {
 		this.glTexture = glTexture;
 		this.scaleFactor = scaleFactor;

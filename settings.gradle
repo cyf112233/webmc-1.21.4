@@ -7,4 +7,15 @@
  * in the user manual at https://docs.gradle.org/6.0/userguide/multi_project_builds.html
  */
 
+
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven { url 'https://repo.teavm.org/maven2' }
+        
+    }
+}
+
 rootProject.name = 'eaglercraft-workspace'
+

@@ -1,106 +1,97 @@
 package net.minecraft.client.renderer.block.model;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.lang.reflect.Type;
+import javax.annotation.Nullable;
+import net.minecraft.util.GsonHelper;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-import net.lax1dude.eaglercraft.v1_8.json.JSONTypeDeserializer;
-
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
+@OnlyIn(Dist.CLIENT)
 public class BlockFaceUV {
-	public float[] uvs;
-	public final int rotation;
+    public float[] uvs;
+    public final int rotation;
 
-	public BlockFaceUV(float[] uvsIn, int rotationIn) {
-		this.uvs = uvsIn;
-		this.rotation = rotationIn;
-	}
+    public BlockFaceUV(@Nullable float[] p_111390_, int p_111391_) {
+        this.uvs = p_111390_;
+        this.rotation = p_111391_;
+    }
 
-	public float func_178348_a(int parInt1) {
-		if (this.uvs == null) {
-			throw new NullPointerException("uvs");
-		} else {
-			int i = this.func_178347_d(parInt1);
-			return i != 0 && i != 1 ? this.uvs[2] : this.uvs[0];
-		}
-	}
+    public float getU(int p_111393_) {
+        if (this.uvs == null) {
+            throw new NullPointerException("uvs");
+        } else {
+            int i = this.getShiftedIndex(p_111393_);
+            return this.uvs[i != 0 && i != 1 ? 2 : 0];
+        }
+    }
 
-	public float func_178346_b(int parInt1) {
-		if (this.uvs == null) {
-			throw new NullPointerException("uvs");
-		} else {
-			int i = this.func_178347_d(parInt1);
-			return i != 0 && i != 3 ? this.uvs[3] : this.uvs[1];
-		}
-	}
+    public float getV(int p_111397_) {
+        if (this.uvs == null) {
+            throw new NullPointerException("uvs");
+        } else {
+            int i = this.getShiftedIndex(p_111397_);
+            return this.uvs[i != 0 && i != 3 ? 3 : 1];
+        }
+    }
 
-	private int func_178347_d(int parInt1) {
-		return (parInt1 + this.rotation / 90) % 4;
-	}
+    private int getShiftedIndex(int p_111401_) {
+        return (p_111401_ + this.rotation / 90) % 4;
+    }
 
-	public int func_178345_c(int parInt1) {
-		return (parInt1 + (4 - this.rotation / 90)) % 4;
-	}
+    public int getReverseIndex(int p_111399_) {
+        return (p_111399_ + 4 - this.rotation / 90) % 4;
+    }
 
-	public void setUvs(float[] uvsIn) {
-		if (this.uvs == null) {
-			this.uvs = uvsIn;
-		}
+    public void setMissingUv(float[] p_111395_) {
+        if (this.uvs == null) {
+            this.uvs = p_111395_;
+        }
+    }
 
-	}
+    @OnlyIn(Dist.CLIENT)
+    protected static class Deserializer implements JsonDeserializer<BlockFaceUV> {
+        private static final int DEFAULT_ROTATION = 0;
 
-	public static class Deserializer implements JSONTypeDeserializer<JSONObject, BlockFaceUV> {
-		public BlockFaceUV deserialize(JSONObject jsonobject) throws JSONException {
-			float[] afloat = this.parseUV(jsonobject);
-			int i = this.parseRotation(jsonobject);
-			return new BlockFaceUV(afloat, i);
-		}
+        public BlockFaceUV deserialize(JsonElement p_111404_, Type p_111405_, JsonDeserializationContext p_111406_) throws JsonParseException {
+            JsonObject jsonobject = p_111404_.getAsJsonObject();
+            float[] afloat = this.getUVs(jsonobject);
+            int i = this.getRotation(jsonobject);
+            return new BlockFaceUV(afloat, i);
+        }
 
-		protected int parseRotation(JSONObject parJsonObject) {
-			int i = parJsonObject.optInt("rotation", 0);
-			if (i >= 0 && i % 90 == 0 && i / 90 <= 3) {
-				return i;
-			} else {
-				throw new JSONException("Invalid rotation " + i + " found, only 0/90/180/270 allowed");
-			}
-		}
+        protected int getRotation(JsonObject p_111408_) {
+            int i = GsonHelper.getAsInt(p_111408_, "rotation", 0);
+            if (i >= 0 && i % 90 == 0 && i / 90 <= 3) {
+                return i;
+            } else {
+                throw new JsonParseException("Invalid rotation " + i + " found, only 0/90/180/270 allowed");
+            }
+        }
 
-		private float[] parseUV(JSONObject parJsonObject) {
-			if (!parJsonObject.has("uv")) {
-				return null;
-			} else {
-				JSONArray jsonarray = parJsonObject.getJSONArray("uv");
-				if (jsonarray.length() != 4) {
-					throw new JSONException("Expected 4 uv values, found: " + jsonarray.length());
-				} else {
-					float[] afloat = new float[4];
+        @Nullable
+        private float[] getUVs(JsonObject p_111410_) {
+            if (!p_111410_.has("uv")) {
+                return null;
+            } else {
+                JsonArray jsonarray = GsonHelper.getAsJsonArray(p_111410_, "uv");
+                if (jsonarray.size() != 4) {
+                    throw new JsonParseException("Expected 4 uv values, found: " + jsonarray.size());
+                } else {
+                    float[] afloat = new float[4];
 
-					for (int i = 0; i < afloat.length; ++i) {
-						afloat[i] = jsonarray.getFloat(i);
-					}
+                    for (int i = 0; i < afloat.length; i++) {
+                        afloat[i] = GsonHelper.convertToFloat(jsonarray.get(i), "uv[" + i + "]");
+                    }
 
-					return afloat;
-				}
-			}
-		}
-	}
+                    return afloat;
+                }
+            }
+        }
+    }
 }

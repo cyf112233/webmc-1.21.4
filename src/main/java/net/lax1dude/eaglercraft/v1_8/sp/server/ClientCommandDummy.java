@@ -16,12 +16,12 @@
 
 package net.lax1dude.eaglercraft.v1_8.sp.server;
 
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.commands.Commands;
+//import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 
-public class ClientCommandDummy extends CommandBase {
+public class ClientCommandDummy extends Commands {
 
 	private final String commandName;
 	private final int permissionLevel;
@@ -44,13 +44,13 @@ public class ClientCommandDummy extends CommandBase {
 	}
 
 	@Override
-	public String getCommandUsage(ICommandSender var1) {
+	public String getCommandUsage(CommandSourceStack var1) {
 		return commandUsage;
 	}
 
 	@Override
-	public void processCommand(ICommandSender var1, String[] var2) throws CommandException {
-		var1.addChatMessage(new ChatComponentTranslation("command.clientStub"));
+	public void processCommand(CommandSourceStack var1, String[] var2) throws Exception {
+		var1.addChatMessage(new Component("command.clientStub"));
 	}
 
 }

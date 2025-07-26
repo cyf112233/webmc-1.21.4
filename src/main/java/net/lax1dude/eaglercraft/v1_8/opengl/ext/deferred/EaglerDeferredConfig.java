@@ -25,9 +25,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.ResourceLocation;
 
 public class EaglerDeferredConfig {
 
@@ -138,7 +138,7 @@ public class EaglerDeferredConfig {
 		output.println("shaders_deferred_subsurfaceScattering:" + subsurfaceScattering);
 	}
 
-	public void reloadShaderPackInfo(IResourceManager mgr) throws IOException {
+	public void reloadShaderPackInfo(ResourceManager mgr) throws IOException {
 		IResource res = mgr.getResource(shaderPackInfoFile);
 		try(InputStream is = res.getInputStream()) {
 			try {

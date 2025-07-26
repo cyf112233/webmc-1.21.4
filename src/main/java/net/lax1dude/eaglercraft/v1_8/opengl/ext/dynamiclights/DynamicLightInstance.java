@@ -27,13 +27,13 @@ class DynamicLightInstance {
 	}
 
 	public void updateLight(double posX, double posY, double posZ, float radius) {
-		this.posX = posX;
-		this.posY = posY;
-		this.posZ = posZ;
+		this.getX() = posX;
+		this.getY() = posY;
+		this.getZ() = posZ;
 		this.radius = radius;
 	}
 
-	public float getRadiusInWorld() {
+	public float getRadiusInLevel() {
 		return radius;
 	}
 

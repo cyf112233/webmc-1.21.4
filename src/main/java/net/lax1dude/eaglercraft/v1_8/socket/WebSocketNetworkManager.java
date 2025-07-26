@@ -24,11 +24,11 @@ import net.lax1dude.eaglercraft.v1_8.internal.IWebSocketClient;
 import net.lax1dude.eaglercraft.v1_8.internal.IWebSocketFrame;
 import net.lax1dude.eaglercraft.v1_8.netty.ByteBuf;
 import net.lax1dude.eaglercraft.v1_8.netty.Unpooled;
-import net.minecraft.network.EnumPacketDirection;
-import net.minecraft.network.Packet;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Component;
 
 public class WebSocketNetworkManager extends EaglercraftNetworkManager {
 
@@ -46,7 +46,7 @@ public class WebSocketNetworkManager extends EaglercraftNetworkManager {
 		return webSocketClient.getState();
 	}
 
-	public void closeChannel(IChatComponent reason) {
+	public void closeChannel(Component reason) {
 		webSocketClient.close();
 		if(nethandler != null) {
 			nethandler.onDisconnect(reason);
@@ -73,12 +73,12 @@ public class WebSocketNetworkManager extends EaglercraftNetworkManager {
 				byte[] asByteArray = next.getByteArray();
 				ByteBuf nettyBuffer = Unpooled.buffer(asByteArray, asByteArray.length);
 				nettyBuffer.writerIndex(asByteArray.length);
-				PacketBuffer input = new PacketBuffer(nettyBuffer);
+				FriendlyByteBuf input = new FriendlyByteBuf(nettyBuffer);
 				int pktId = input.readVarIntFromBuffer();
 				
 				Packet pkt;
 				try {
-					pkt = packetState.getPacket(EnumPacketDirection.CLIENTBOUND, pktId);
+					pkt = packetState.getPacket(PacketFlow.CLIENTBOUND, pktId);
 				}catch(IllegalAccessException | InstantiationException ex) {
 					throw new IOException("Recieved a packet with type " + pktId + " which is invalid!");
 				}
@@ -115,7 +115,7 @@ public class WebSocketNetworkManager extends EaglercraftNetworkManager {
 		
 		int i;
 		try {
-			i = packetState.getPacketId(EnumPacketDirection.SERVERBOUND, pkt);
+			i = packetState.getPacketId(PacketFlow.SERVERBOUND, pkt);
 		}catch(Throwable t) {
 			logger.error("Incorrect packet for state: {}", pkt.getClass().getSimpleName());
 			return;
@@ -143,7 +143,7 @@ public class WebSocketNetworkManager extends EaglercraftNetworkManager {
 				processReceivedPackets(); // catch kick message
 			} catch (IOException e) {
 			}
-			doClientDisconnect(new ChatComponentTranslation("disconnect.endOfStream"));
+			doClientDisconnect(new Component("disconnect.endOfStream"));
 			return true;
 		}else {
 			return false;

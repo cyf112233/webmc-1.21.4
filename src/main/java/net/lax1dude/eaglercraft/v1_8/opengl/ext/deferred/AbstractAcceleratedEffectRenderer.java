@@ -17,8 +17,8 @@
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
 
 import net.lax1dude.eaglercraft.v1_8.minecraft.IAcceleratedParticleEngine;
-import net.minecraft.client.particle.EntityFX;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.world.entity.Entity;
 
 public abstract class AbstractAcceleratedEffectRenderer implements IAcceleratedParticleEngine {
 
@@ -27,18 +27,18 @@ public abstract class AbstractAcceleratedEffectRenderer implements IAcceleratedP
 	@Override
 	public void drawParticle(Entity entityIn, int particleIndexX, int particleIndexY, int lightMapData,
 			int texSize, float particleSize, float r, float g, float b, float a) {
-		float xx = (float) (entityIn.prevPosX + (entityIn.posX - entityIn.prevPosX) * (double) partialTicks - EntityFX.interpPosX);
-		float yy = (float) (entityIn.prevPosY + (entityIn.posY - entityIn.prevPosY) * (double) partialTicks - EntityFX.interpPosY);
-		float zz = (float) (entityIn.prevPosZ + (entityIn.posZ - entityIn.prevPosZ) * (double) partialTicks - EntityFX.interpPosZ);
+		float xx = (float) (entityIn.prevPosX + (entityIn.getX() - entityIn.prevPosX) * (double) partialTicks - Particle.interpPosX);
+		float yy = (float) (entityIn.prevPosY + (entityIn.getY() - entityIn.prevPosY) * (double) partialTicks - Particle.interpPosY);
+		float zz = (float) (entityIn.prevPosZ + (entityIn.getZ() - entityIn.prevPosZ) * (double) partialTicks - Particle.interpPosZ);
 		drawParticle(xx, yy, zz, particleIndexX, particleIndexY, lightMapData, texSize, particleSize, r, g, b, a);
 	}
 
 	@Override
 	public void drawParticle(Entity entityIn, int particleIndexX, int particleIndexY, int lightMapData,
 			int texSize, float particleSize, int rgba) {
-		float xx = (float) (entityIn.prevPosX + (entityIn.posX - entityIn.prevPosX) * (double) partialTicks - EntityFX.interpPosX);
-		float yy = (float) (entityIn.prevPosY + (entityIn.posY - entityIn.prevPosY) * (double) partialTicks - EntityFX.interpPosY);
-		float zz = (float) (entityIn.prevPosZ + (entityIn.posZ - entityIn.prevPosZ) * (double) partialTicks - EntityFX.interpPosZ);
+		float xx = (float) (entityIn.prevPosX + (entityIn.getX() - entityIn.prevPosX) * (double) partialTicks - Particle.interpPosX);
+		float yy = (float) (entityIn.prevPosY + (entityIn.getY() - entityIn.prevPosY) * (double) partialTicks - Particle.interpPosY);
+		float zz = (float) (entityIn.prevPosZ + (entityIn.getZ() - entityIn.prevPosZ) * (double) partialTicks - Particle.interpPosZ);
 		drawParticle(xx, yy, zz, particleIndexX, particleIndexY, lightMapData, texSize, particleSize, rgba);
 	}
 

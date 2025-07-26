@@ -1,164 +1,203 @@
 package net.minecraft.client.renderer.texture;
 
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.logging.LogUtils;
+import com.mojang.realmsclient.gui.screens.AddRealmPopupScreen;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.Callable;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.slf4j.Logger;
 
-import com.carrotsearch.hppc.ObjectIntHashMap;
-import com.carrotsearch.hppc.ObjectIntMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+@OnlyIn(Dist.CLIENT)
+public class TextureManager implements PreparableReloadListener, Tickable, AutoCloseable {
+    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final ResourceLocation INTENTIONAL_MISSING_TEXTURE = ResourceLocation.withDefaultNamespace("");
+    private final Map<ResourceLocation, AbstractTexture> byPath = new HashMap<>();
+    private final Set<Tickable> tickableTextures = new HashSet<>();
+    private final ResourceManager resourceManager;
 
-import net.lax1dude.eaglercraft.v1_8.HString;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.DeferredStateManager;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
-import net.minecraft.util.ReportedException;
-import net.minecraft.util.ResourceLocation;
+    public TextureManager(ResourceManager p_118474_) {
+        this.resourceManager = p_118474_;
+        NativeImage nativeimage = MissingTextureAtlasSprite.generateMissingImage();
+        this.register(MissingTextureAtlasSprite.getLocation(), new DynamicTexture(nativeimage));
+    }
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public class TextureManager implements ITickable, IResourceManagerReloadListener {
-	private static final Logger logger = LogManager.getLogger();
-	private final Map<ResourceLocation, ITextureObject> mapTextureObjects = Maps.newHashMap();
-	private final List<ITickable> listTickables = Lists.newArrayList();
-	private final ObjectIntMap<String> mapTextureCounters = new ObjectIntHashMap<>();
-	private IResourceManager theResourceManager;
+    public void registerAndLoad(ResourceLocation p_377323_, ReloadableTexture p_376843_) {
+        try {
+            p_376843_.apply(this.loadContentsSafe(p_377323_, p_376843_));
+        } catch (Throwable throwable) {
+            CrashReport crashreport = CrashReport.forThrowable(throwable, "Uploading texture");
+            CrashReportCategory crashreportcategory = crashreport.addCategory("Uploaded texture");
+            crashreportcategory.setDetail("Resource location", p_376843_.resourceId());
+            crashreportcategory.setDetail("Texture id", p_377323_);
+            throw new ReportedException(crashreport);
+        }
 
-	public TextureManager(IResourceManager resourceManager) {
-		this.theResourceManager = resourceManager;
-	}
+        this.register(p_377323_, p_376843_);
+    }
 
-	public void bindTexture(ResourceLocation resource) {
-		int glTex;
-		if (resource.cachedPointerType == ResourceLocation.CACHED_POINTER_TEXTURE) {
-			TextureUtil.bindTexture(glTex = ((ITextureObject) resource.cachedPointer).getGlTextureId());
-		} else {
-			Object object = (ITextureObject) this.mapTextureObjects.get(resource);
-			if (object == null) {
-				object = new SimpleTexture(resource);
-				this.loadTexture(resource, (ITextureObject) object);
-			}
+    private TextureContents loadContentsSafe(ResourceLocation p_378160_, ReloadableTexture p_378623_) {
+        try {
+            return loadContents(this.resourceManager, p_378160_, p_378623_);
+        } catch (Exception exception) {
+            LOGGER.error("Failed to load texture {} into slot {}", p_378623_.resourceId(), p_378160_, exception);
+            return TextureContents.createMissing();
+        }
+    }
 
-			resource.cachedPointer = object;
-			resource.cachedPointerType = ResourceLocation.CACHED_POINTER_TEXTURE;
-			TextureUtil.bindTexture(glTex = ((ITextureObject) object).getGlTextureId());
-		}
-		if (DeferredStateManager.isInDeferredPass()) {
-			TextureMap blocksTex = Minecraft.getMinecraft().getTextureMapBlocks();
-			if (blocksTex != null) {
-				if (blocksTex.getGlTextureId() == glTex) {
-					DeferredStateManager.enableMaterialTexture();
-					GlStateManager.quickBindTexture(GL_TEXTURE2, blocksTex.eaglerPBRMaterialTexture);
-				} else {
-					DeferredStateManager.disableMaterialTexture();
-				}
-			}
-		}
-	}
+    public void registerForNextReload(ResourceLocation p_377796_) {
+        this.register(p_377796_, new SimpleTexture(p_377796_));
+    }
 
-	public boolean loadTickableTexture(ResourceLocation textureLocation, ITickableTextureObject textureObj) {
-		if (this.loadTexture(textureLocation, textureObj)) {
-			this.listTickables.add(textureObj);
-			return true;
-		} else {
-			return false;
-		}
-	}
+    public void register(ResourceLocation p_118496_, AbstractTexture p_118497_) {
+        AbstractTexture abstracttexture = this.byPath.put(p_118496_, p_118497_);
+        if (abstracttexture != p_118497_) {
+            if (abstracttexture != null) {
+                this.safeClose(p_118496_, abstracttexture);
+            }
 
-	public boolean loadTexture(ResourceLocation textureLocation, ITextureObject textureObj) {
-		boolean flag = true;
+            if (p_118497_ instanceof Tickable tickable) {
+                this.tickableTextures.add(tickable);
+            }
+        }
+    }
 
-		try {
-			((ITextureObject) textureObj).loadTexture(this.theResourceManager);
-		} catch (IOException ioexception) {
-			logger.warn("Failed to load texture: " + textureLocation, ioexception);
-			textureObj = TextureUtil.missingTexture;
-			this.mapTextureObjects.put(textureLocation, textureObj);
-			flag = false;
-		} catch (Throwable throwable) {
-			CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Registering texture");
-			CrashReportCategory crashreportcategory = crashreport.makeCategory("Resource location being registered");
-			crashreportcategory.addCrashSection("Resource location", textureLocation);
-			final ITextureObject textureObj2 = textureObj;
-			crashreportcategory.addCrashSectionCallable("Texture object class", new Callable<String>() {
-				public String call() throws Exception {
-					return textureObj2.getClass().getName();
-				}
-			});
-			throw new ReportedException(crashreport);
-		}
+    private void safeClose(ResourceLocation p_118509_, AbstractTexture p_118510_) {
+        this.tickableTextures.remove(p_118510_);
 
-		textureLocation.cachedPointerType = ResourceLocation.CACHED_POINTER_TEXTURE;
-		textureLocation.cachedPointer = textureObj;
-		this.mapTextureObjects.put(textureLocation, textureObj);
-		return flag;
-	}
+        try {
+            p_118510_.close();
+        } catch (Exception exception) {
+            LOGGER.warn("Failed to close texture {}", p_118509_, exception);
+        }
 
-	public ITextureObject getTexture(ResourceLocation textureLocation) {
-		if (textureLocation.cachedPointerType == ResourceLocation.CACHED_POINTER_TEXTURE) {
-			return (ITextureObject) textureLocation.cachedPointer;
-		} else {
-			textureLocation.cachedPointerType = ResourceLocation.CACHED_POINTER_TEXTURE;
-			return (ITextureObject) (textureLocation.cachedPointer = this.mapTextureObjects.get(textureLocation));
-		}
-	}
+        p_118510_.releaseId();
+    }
 
-	public ResourceLocation getDynamicTextureLocation(String name, ITextureObject texture) {
-		int integer = this.mapTextureCounters.getOrDefault(name, 0) + 1;
-		this.mapTextureCounters.put(name, integer);
-		ResourceLocation resourcelocation = new ResourceLocation(
-				HString.format("dynamic/%s_%d", new Object[] { name, integer }));
-		this.loadTexture(resourcelocation, texture);
-		return resourcelocation;
-	}
+    public AbstractTexture getTexture(ResourceLocation p_118507_) {
+        AbstractTexture abstracttexture = this.byPath.get(p_118507_);
+        if (abstracttexture != null) {
+            return abstracttexture;
+        } else {
+            SimpleTexture simpletexture = new SimpleTexture(p_118507_);
+            this.registerAndLoad(p_118507_, simpletexture);
+            return simpletexture;
+        }
+    }
 
-	public void tick() {
-		for (int i = 0, l = this.listTickables.size(); i < l; ++i) {
-			this.listTickables.get(i).tick();
-		}
+    @Override
+    public void tick() {
+        for (Tickable tickable : this.tickableTextures) {
+            tickable.tick();
+        }
+    }
 
-	}
+    public void release(ResourceLocation p_118514_) {
+        AbstractTexture abstracttexture = this.byPath.remove(p_118514_);
+        if (abstracttexture != null) {
+            this.safeClose(p_118514_, abstracttexture);
+        }
+    }
 
-	public void deleteTexture(ResourceLocation textureLocation) {
-		ITextureObject itextureobject = this.mapTextureObjects.remove(textureLocation);
-		if (itextureobject != null) {
-			TextureUtil.deleteTexture(itextureobject.getGlTextureId());
-		}
-	}
+    @Override
+    public void close() {
+        this.byPath.forEach(this::safeClose);
+        this.byPath.clear();
+        this.tickableTextures.clear();
+    }
 
-	public void onResourceManagerReload(IResourceManager var1) {
-		for (Entry entry : this.mapTextureObjects.entrySet()) {
-			this.loadTexture((ResourceLocation) entry.getKey(), (ITextureObject) entry.getValue());
-		}
+    @Override
+    public CompletableFuture<Void> reload(
+        PreparableReloadListener.PreparationBarrier p_118476_, ResourceManager p_118477_, Executor p_118480_, Executor p_118481_
+    ) {
+        List<TextureManager.PendingReload> list = new ArrayList<>();
+        this.byPath.forEach((p_374670_, p_374671_) -> {
+            if (p_374671_ instanceof ReloadableTexture reloadabletexture) {
+                list.add(scheduleLoad(p_118477_, p_374670_, reloadabletexture, p_118480_));
+            }
+        });
+        return CompletableFuture.allOf(list.stream().map(TextureManager.PendingReload::newContents).toArray(CompletableFuture[]::new))
+            .thenCompose(p_118476_::wait)
+            .thenAcceptAsync(p_374677_ -> {
+                AddRealmPopupScreen.updateCarouselImages(this.resourceManager);
 
-	}
+                for (TextureManager.PendingReload texturemanager$pendingreload : list) {
+                    texturemanager$pendingreload.texture.apply(texturemanager$pendingreload.newContents.join());
+                }
+            }, p_118481_);
+    }
+
+    public void dumpAllSheets(Path p_276129_) {
+        if (!RenderSystem.isOnRenderThread()) {
+            RenderSystem.recordRenderCall(() -> this._dumpAllSheets(p_276129_));
+        } else {
+            this._dumpAllSheets(p_276129_);
+        }
+    }
+
+    private void _dumpAllSheets(Path p_276128_) {
+        try {
+            Files.createDirectories(p_276128_);
+        } catch (IOException ioexception) {
+            LOGGER.error("Failed to create directory {}", p_276128_, ioexception);
+            return;
+        }
+
+        this.byPath.forEach((p_276101_, p_276102_) -> {
+            if (p_276102_ instanceof Dumpable dumpable) {
+                try {
+                    dumpable.dumpContents(p_276101_, p_276128_);
+                } catch (IOException ioexception1) {
+                    LOGGER.error("Failed to dump texture {}", p_276101_, ioexception1);
+                }
+            }
+        });
+    }
+
+    private static TextureContents loadContents(ResourceManager p_375654_, ResourceLocation p_378136_, ReloadableTexture p_377917_) throws IOException {
+        try {
+            return p_377917_.loadContents(p_375654_);
+        } catch (FileNotFoundException filenotfoundexception) {
+            if (p_378136_ != INTENTIONAL_MISSING_TEXTURE) {
+                LOGGER.warn("Missing resource {} referenced from {}", p_377917_.resourceId(), p_378136_);
+            }
+
+            return TextureContents.createMissing();
+        }
+    }
+
+    private static TextureManager.PendingReload scheduleLoad(
+        ResourceManager p_377119_, ResourceLocation p_377352_, ReloadableTexture p_377978_, Executor p_376135_
+    ) {
+        return new TextureManager.PendingReload(p_377978_, CompletableFuture.supplyAsync(() -> {
+            try {
+                return loadContents(p_377119_, p_377352_, p_377978_);
+            } catch (IOException ioexception) {
+                throw new UncheckedIOException(ioexception);
+            }
+        }, p_376135_));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    static record PendingReload(ReloadableTexture texture, CompletableFuture<TextureContents> newContents) {
+    }
 }

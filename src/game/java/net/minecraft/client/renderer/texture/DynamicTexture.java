@@ -1,57 +1,78 @@
 package net.minecraft.client.renderer.texture;
 
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.logging.LogUtils;
 import java.io.IOException;
+import java.nio.file.Path;
+import javax.annotation.Nullable;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.slf4j.Logger;
 
-import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.resources.IResourceManager;
+@OnlyIn(Dist.CLIENT)
+public class DynamicTexture extends AbstractTexture implements Dumpable {
+    private static final Logger LOGGER = LogUtils.getLogger();
+    @Nullable
+    private NativeImage pixels;
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public class DynamicTexture extends AbstractTexture {
-	private final int[] dynamicTextureData;
-	private final int width;
-	private final int height;
+    public DynamicTexture(NativeImage p_117984_) {
+        this.pixels = p_117984_;
+        if (!RenderSystem.isOnRenderThread()) {
+            RenderSystem.recordRenderCall(() -> {
+                TextureUtil.prepareImage(this.getId(), this.pixels.getWidth(), this.pixels.getHeight());
+                this.upload();
+            });
+        } else {
+            TextureUtil.prepareImage(this.getId(), this.pixels.getWidth(), this.pixels.getHeight());
+            this.upload();
+        }
+    }
 
-	public DynamicTexture(ImageData bufferedImage) {
-		this(bufferedImage.width, bufferedImage.height);
-		System.arraycopy(bufferedImage.pixels, 0, dynamicTextureData, 0, bufferedImage.pixels.length);
-		this.updateDynamicTexture();
-	}
+    public DynamicTexture(int p_117980_, int p_117981_, boolean p_117982_) {
+        this.pixels = new NativeImage(p_117980_, p_117981_, p_117982_);
+        TextureUtil.prepareImage(this.getId(), this.pixels.getWidth(), this.pixels.getHeight());
+    }
 
-	public DynamicTexture(int textureWidth, int textureHeight) {
-		this.width = textureWidth;
-		this.height = textureHeight;
-		this.dynamicTextureData = new int[textureWidth * textureHeight];
-		this.hasAllocated = true;
-		TextureUtil.allocateTexture(this.getGlTextureId(), textureWidth, textureHeight);
-	}
+    public void upload() {
+        if (this.pixels != null) {
+            this.bind();
+            this.pixels.upload(0, 0, 0, false);
+        } else {
+            LOGGER.warn("Trying to upload disposed texture {}", this.getId());
+        }
+    }
 
-	public void loadTexture(IResourceManager resourceManager) throws IOException {
-	}
+    @Nullable
+    public NativeImage getPixels() {
+        return this.pixels;
+    }
 
-	public void updateDynamicTexture() {
-		TextureUtil.uploadTexture(this.getGlTextureId(), this.dynamicTextureData, this.width, this.height);
-	}
+    public void setPixels(NativeImage p_117989_) {
+        if (this.pixels != null) {
+            this.pixels.close();
+        }
 
-	public int[] getTextureData() {
-		return this.dynamicTextureData;
-	}
+        this.pixels = p_117989_;
+    }
+
+    @Override
+    public void close() {
+        if (this.pixels != null) {
+            this.pixels.close();
+            this.releaseId();
+            this.pixels = null;
+        }
+    }
+
+    @Override
+    public void dumpContents(ResourceLocation p_276119_, Path p_276105_) throws IOException {
+        if (this.pixels != null) {
+            String s = p_276119_.toDebugFileName() + ".png";
+            Path path = p_276105_.resolve(s);
+            this.pixels.writeToFile(path);
+        }
+    }
 }

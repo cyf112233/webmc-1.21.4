@@ -1,5 +1,7 @@
 {
-    "variants": {
-        "normal": { "model": "red_tulip" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/red_tulip"
     }
+  }
 }

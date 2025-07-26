@@ -18,18 +18,18 @@ package net.lax1dude.eaglercraft.v1_8;
 
 import java.util.List;
 
-import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.client.KeyMapping;
 
 public class ArrayUtils {
 
-	public static KeyBinding[] clone(KeyBinding[] keyBinding) {
-		KeyBinding[] clone = new KeyBinding[keyBinding.length];
+	public static KeyMapping[] clone(KeyMapping[] keyBinding) {
+		KeyMapping[] clone = new KeyMapping[keyBinding.length];
 		System.arraycopy(keyBinding, 0, clone, 0, keyBinding.length);
 		return clone;
 	}
 
-	public static KeyBinding[] addAll(KeyBinding[] arr1, KeyBinding[] arr2) {
-		KeyBinding[] clone = new KeyBinding[arr1.length + arr2.length];
+	public static KeyMapping[] addAll(KeyMapping[] arr1, KeyMapping[] arr2) {
+		KeyMapping[] clone = new KeyMapping[arr1.length + arr2.length];
 		System.arraycopy(arr1, 0, clone, 0, arr1.length);
 		System.arraycopy(arr2, 0, clone, arr1.length, arr2.length);
 		return clone;

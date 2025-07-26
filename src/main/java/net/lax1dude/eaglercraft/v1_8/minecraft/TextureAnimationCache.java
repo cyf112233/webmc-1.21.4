@@ -19,14 +19,16 @@ package net.lax1dude.eaglercraft.v1_8.minecraft;
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 
 import java.util.List;
+import java.nio.ByteOrder;
 
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
 import net.lax1dude.eaglercraft.v1_8.internal.buffer.IntBuffer;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.opengl.SpriteLevelMixer;
 import net.lax1dude.eaglercraft.v1_8.opengl.TextureCopyUtil;
-import net.minecraft.client.renderer.GLAllocation;
+//import net.minecraft.client.renderer.GLAllocation;
 
 public class TextureAnimationCache {
 
@@ -58,7 +60,8 @@ public class TextureAnimationCache {
 		}
 		
 		frameCount = frames.size();
-		IntBuffer pixels = GLAllocation.createDirectIntBuffer(width * height * frameCount);
+		IntBuffer pixels = EagRuntime.allocateIntBuffer(width * height * frameCount);
+		ByteBuffer byteBuffer = EagRuntime.allocateByteBuffer(pixels.remaining() * 4);
 		
 		try {
 			for(int i = 0; i < mipLevels; ++i) {
@@ -84,11 +87,23 @@ public class TextureAnimationCache {
 				
 				pixels.flip();
 				
+				// Convert IntBuffer to ByteBuffer
+				byteBuffer.clear();
+				for (int j = 0; j < pixels.remaining(); j++) {
+					int pixel = pixels.get();
+					byteBuffer.put((byte) ((pixel >> 16) & 0xFF));  // R
+					byteBuffer.put((byte) ((pixel >> 8) & 0xFF));   // G
+					byteBuffer.put((byte) (pixel & 0xFF));          // B
+					byteBuffer.put((byte) ((pixel >> 24) & 0xFF));  // A
+				}
+				byteBuffer.flip();
+				
 				GlStateManager.bindTexture(cacheTextures[i]);
-				EaglercraftGPU.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, lw, lh * frameCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+				EaglercraftGPU.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, lw, lh * frameCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, byteBuffer);
 			}
 		}finally {
 			EagRuntime.freeIntBuffer(pixels);
+			EagRuntime.freeByteBuffer(byteBuffer);
 		}
 	}
 

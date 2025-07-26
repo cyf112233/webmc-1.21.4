@@ -29,13 +29,11 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.minecraft.EaglerTextureAtlasSprite;
 import net.lax1dude.eaglercraft.v1_8.minecraft.TextureAnimationCache;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.data.AnimationFrame;
-import net.minecraft.client.resources.data.AnimationMetadataSection;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
-import net.minecraft.util.ReportedException;
-import net.minecraft.util.ResourceLocation;
+// Using Eaglercraft's texture utilities instead of removed/restricted classes
+import net.minecraft.client.resources.metadata.animation.AnimationFrame;
+import net.minecraft.client.resources.metadata.animation.AnimationMetadataSection;
+// Crash reporting is now handled differently in 1.21.4
+import net.minecraft.resources.ResourceLocation;
 
 public class EaglerTextureAtlasSpritePBR extends EaglerTextureAtlasSprite {
 
@@ -57,7 +55,7 @@ public class EaglerTextureAtlasSpritePBR extends EaglerTextureAtlasSprite {
 		super(spriteName);
 	}
 
-	public void loadSpritePBR(ImageData[][] imageDatas, AnimationMetadataSection meta,
+	public void loadSpritePBR(ImageData[][] imageDatas, net.minecraft.client.resources.metadata.animation.AnimationMetadataSection meta,
 			boolean dontAnimateNormals, boolean dontAnimateMaterial) {
 		this.resetSprite();
 		if(imageDatas.length != 3) {
@@ -118,16 +116,16 @@ public class EaglerTextureAtlasSpritePBR extends EaglerTextureAtlasSprite {
 
 				this.animationMetadata = meta;
 			} else {
-				List<AnimationFrame> arraylist = Lists.newArrayList();
+				List<net.minecraft.client.resources.metadata.animation.AnimationFrame> arraylist = Lists.newArrayList();
 
 				for (int l1 = 0; l1 < j1; ++l1) {
 					this.frameTextureDataPBR[0].add(getFrameTextureData(aint[0], k1, l, l1));
 					this.frameTextureDataPBR[1].add(getFrameTextureData(aint[1], k1, l, l1));
 					this.frameTextureDataPBR[2].add(getFrameTextureData(aint[2], k1, l, l1));
-					arraylist.add(new AnimationFrame(l1, -1));
+					arraylist.add(new net.minecraft.client.resources.metadata.animation.AnimationFrame(l1, -1));
 				}
 
-				this.animationMetadata = new AnimationMetadataSection(arraylist, this.width, this.height,
+				this.animationMetadata = new net.minecraft.client.resources.metadata.animation.AnimationMetadataSection(arraylist, this.width, this.height,
 						meta.getFrameTime(), meta.isInterpolate());
 			}
 		}
@@ -170,13 +168,13 @@ public class EaglerTextureAtlasSpritePBR extends EaglerTextureAtlasSprite {
 				if (aint != null) {
 					try {
 						if(j == 0) {
-							arraylist[j].add(TextureUtil.generateMipmapData(level, this.width, aint));
+							arraylist[j].add(net.lax1dude.eaglercraft.v1_8.opengl.ImageData.mipmap(aint, level, this.width));
 						}else {
 							arraylist[j].add(PBRTextureMapUtils.generateMipmapDataIgnoreAlpha(level, this.width, aint));
 						}
 					} catch (Throwable throwable) {
-						CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Generating mipmaps for frame (pbr)");
-						CrashReportCategory crashreportcategory = crashreport.makeCategory("Frame being iterated");
+						net.minecraft.CrashReport crashreport = net.minecraft.CrashReport.forThrowable(throwable, "Generating mipmaps for frame (pbr)");
+						net.minecraft.CrashReportCategory crashreportcategory = crashreport.addCategory("Frame being iterated");
 						crashreportcategory.addCrashSection("PBR Layer", Integer.valueOf(j));
 						crashreportcategory.addCrashSection("Frame index", Integer.valueOf(i));
 						crashreportcategory.addCrashSectionCallable("Frame sizes", new Callable<String>() {
@@ -195,7 +193,7 @@ public class EaglerTextureAtlasSpritePBR extends EaglerTextureAtlasSprite {
 								return stringbuilder.toString();
 							}
 						});
-						throw new ReportedException(crashreport);
+						throw new RuntimeException(crashreport.getFriendlyReport());
 					}
 				}
 			}
@@ -316,7 +314,7 @@ public class EaglerTextureAtlasSpritePBR extends EaglerTextureAtlasSprite {
 		}
 	}
 
-	public void loadSprite(ImageData[] images, AnimationMetadataSection meta) throws IOException {
+	public void loadSprite(ImageData[] images, net.minecraft.client.resources.metadata.animation.AnimationMetadataSection meta) throws IOException {
 		Throwable t = new UnsupportedOperationException("Cannot call regular loadSprite in PBR mode, use loadSpritePBR");
 		try {
 			throw t;

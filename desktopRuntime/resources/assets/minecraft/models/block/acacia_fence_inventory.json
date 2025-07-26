@@ -1,6 +1,6 @@
 {
-    "parent": "block/fence_inventory",
-    "textures": {
-        "texture": "blocks/planks_acacia"
-    }
+  "parent": "minecraft:block/fence_inventory",
+  "textures": {
+    "texture": "minecraft:block/acacia_planks"
+  }
 }

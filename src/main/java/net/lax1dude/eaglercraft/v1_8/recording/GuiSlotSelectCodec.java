@@ -16,44 +16,44 @@
 
 package net.lax1dude.eaglercraft.v1_8.recording;
 
-import net.minecraft.client.gui.GuiSlot;
+import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 
-public class GuiSlotSelectCodec extends GuiSlot {
+public class GuiSlotSelectCodec extends ContainerObjectSelectionList {
 
-	protected final GuiScreenSelectCodec screen;
+    protected final ScreenSelectCodec screen;
 
-	public GuiSlotSelectCodec(GuiScreenSelectCodec screen, int topIn, int bottomIn) {
-		super(GuiScreenSelectCodec.getMC(screen), screen.width, screen.height, topIn, bottomIn, 18);
-		this.screen = screen;
-	}
+    public GuiSlotSelectCodec(ScreenSelectCodec screen, int topIn, int bottomIn) {
+        super(ScreenSelectCodec.getMC(screen), screen.width, screen.height, topIn, bottomIn, 18);
+        this.screen = screen;
+    }
 
-	@Override
-	protected int getSize() {
-		return screen.codecs.size();
-	}
+    @Override
+    protected int getSize() {
+        return screen.codecs.size();
+    }
 
-	@Override
-	protected void elementClicked(int var1, boolean var2, int var3, int var4) {
-		if(var1 < screen.codecs.size()) {
-			screen.selectedCodec = var1;
-		}
-	}
+    @Override
+    protected void elementClicked(int var1, boolean var2, int var3, int var4) {
+        if(var1 < screen.codecs.size()) {
+            screen.selectedCodec = var1;
+        }
+    }
 
-	@Override
-	protected boolean isSelected(int var1) {
-		return screen.selectedCodec == var1;
-	}
+    @Override
+    protected boolean isSelected(int var1) {
+        return screen.selectedCodec == var1;
+    }
 
-	@Override
-	protected void drawBackground() {
-		screen.drawDefaultBackground();
-	}
+    @Override
+    protected void drawBackground() {
+        screen.drawDefaultBackground();
+    }
 
-	@Override
-	protected void drawSlot(int id, int xx, int yy, int width, int height, int ii) {
-		if(id < screen.codecs.size()) {
-			this.screen.drawString(mc.fontRendererObj, screen.codecs.get(id).name, xx + 4, yy + 3, 0xFFFFFF);
-		}
-	}
+    @Override
+    protected void drawSlot(int id, int xx, int yy, int width, int height, int ii) {
+        if(id < screen.codecs.size()) {
+            this.screen.drawString(mc.font, screen.codecs.get(id).name, xx + 4, yy + 3, 0xFFFFFF);
+        }
+    }
 
 }

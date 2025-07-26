@@ -21,10 +21,9 @@ import java.util.List;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public class PBRTextureMapUtils {
 
@@ -34,11 +33,11 @@ public class PBRTextureMapUtils {
 
 	public static final Logger logger = LogManager.getLogger("PBRTextureMap");
 
-	public static ImageData locateCompanionTexture(IResourceManager resMgr, IResource mainImage, String ext) {
-		ResourceLocation baseLocation = mainImage.getResourceLocation();
-		String domain = baseLocation.getResourceDomain();
-		String resourcePack = mainImage.getResourcePackName();
-		String fname = baseLocation.getResourcePath();
+	public static ImageData locateCompanionTexture(ResourceManager resMgr, Resource mainImage, String ext) {
+		ResourceLocation baseLocation = mainImage.location();
+		String domain = baseLocation.getNamespace();
+		String resourcePack = mainImage.sourcePackId();
+		String fname = baseLocation.getPath();
 		int idx = fname.lastIndexOf('.');
 		if(idx != -1) {
 			fname = fname.substring(0, idx) + ext + fname.substring(idx);
@@ -46,11 +45,11 @@ public class PBRTextureMapUtils {
 			fname += ext;
 		}
 		try {
-			List<IResource> ress = resMgr.getAllResources(new ResourceLocation(domain, fname));
+			List<Resource> ress = resMgr.getResourceStack(new ResourceLocation(domain, fname));
 			for(int k = 0, l = ress.size(); k < l; ++k) {
-				IResource res = ress.get(k);
-				if(res.getResourcePackName().equals(resourcePack)) {
-					ImageData toRet = TextureUtil.readBufferedImage(res.getInputStream());
+				Resource res = ress.get(k);
+				if(res.sourcePackId().equals(resourcePack)) {
+					ImageData toRet = new ImageData(res.open());
 					if(ext.equals("_s")) {
 						for(int i = 0, j; i < toRet.pixels.length; ++i) {
 							// swap B and A, because labPBR support

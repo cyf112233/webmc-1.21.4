@@ -1,5 +1,7 @@
 {
-    "variants": {
-        "normal": { "model": "birch_leaves" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/birch_leaves"
     }
+  }
 }

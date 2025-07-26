@@ -1,53 +1,39 @@
 package net.minecraft.world;
 
-import net.minecraft.nbt.NBTTagCompound;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import net.minecraft.advancements.critereon.ItemPredicate;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.ItemStack;
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public class LockCode {
-	public static final LockCode EMPTY_CODE = new LockCode("");
-	private final String lock;
+public record LockCode(ItemPredicate predicate) {
+    public static final LockCode NO_LOCK = new LockCode(ItemPredicate.Builder.item().build());
+    public static final Codec<LockCode> CODEC = ItemPredicate.CODEC.xmap(LockCode::new, LockCode::predicate);
+    public static final String TAG_LOCK = "lock";
 
-	public LockCode(String code) {
-		this.lock = code;
-	}
+    public boolean unlocksWith(ItemStack p_19108_) {
+        return this.predicate.test(p_19108_);
+    }
 
-	public boolean isEmpty() {
-		return this.lock == null || this.lock.isEmpty();
-	}
+    public void addToTag(CompoundTag p_19110_, HolderLookup.Provider p_367767_) {
+        if (this != NO_LOCK) {
+            DataResult<Tag> dataresult = CODEC.encode(this, p_367767_.createSerializationContext(NbtOps.INSTANCE), new CompoundTag());
+            dataresult.result().ifPresent(p_362847_ -> p_19110_.put("lock", p_362847_));
+        }
+    }
 
-	public String getLock() {
-		return this.lock;
-	}
+    public static LockCode fromTag(CompoundTag p_19112_, HolderLookup.Provider p_361968_) {
+        if (p_19112_.contains("lock", 10)) {
+            DataResult<Pair<LockCode, Tag>> dataresult = CODEC.decode(p_361968_.createSerializationContext(NbtOps.INSTANCE), p_19112_.get("lock"));
+            if (dataresult.isSuccess()) {
+                return dataresult.getOrThrow().getFirst();
+            }
+        }
 
-	public void toNBT(NBTTagCompound nbt) {
-		nbt.setString("Lock", this.lock);
-	}
-
-	public static LockCode fromNBT(NBTTagCompound nbt) {
-		if (nbt.hasKey("Lock", 8)) {
-			String s = nbt.getString("Lock");
-			return new LockCode(s);
-		} else {
-			return EMPTY_CODE;
-		}
-	}
+        return NO_LOCK;
+    }
 }

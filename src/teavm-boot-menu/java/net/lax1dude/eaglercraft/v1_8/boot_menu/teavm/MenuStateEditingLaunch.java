@@ -34,8 +34,6 @@ import net.lax1dude.eaglercraft.v1_8.boot_menu.teavm.BootMenuMetadata.DefaultLau
 import net.lax1dude.eaglercraft.v1_8.boot_menu.teavm.BootMenuMetadata.LaunchTemplate;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTException;
 
 public class MenuStateEditingLaunch extends MenuState {
 
@@ -409,9 +407,10 @@ public class MenuStateEditingLaunch extends MenuState {
 			}
 			try {
 				String str = launchConf.launchOpts;
-				JsonToNBT.getTagFromJson(str.substring(5, str.length() - 6).trim());
+				// Parse as JSON instead of NBT
+				new JSONObject(str.substring(5, str.length() - 6).trim());
 				return null;
-			}catch(NBTException ex) {
+			}catch(JSONException ex) {
 				return ex.toString();
 			}
 		case EAGLER_BETA_V1:

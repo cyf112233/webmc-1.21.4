@@ -16,6 +16,8 @@
 
 package net.lax1dude.eaglercraft.v1_8.sp.relay;
 
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayWorldsQuery;
+
 public class RelayQueryDispatch {
 
 	public static RelayQuery openRelayQuery(String addr) {

@@ -33,9 +33,9 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacket;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacket00Handshake;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacketFFErrorCode;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 
 public class RelayManager {
 
@@ -48,10 +48,10 @@ public class RelayManager {
 	private long lastPingThrough = 0l;
 
 	public void load(byte[] relayConfig) {
-		NBTTagCompound relays = null;
+		CompoundTag relays = null;
 		if(relayConfig != null) {
 			try {
-				relays = CompressedStreamTools.readCompressed(new EaglerInputStream(relayConfig));
+				relays = NbtIo.readCompressed(new EaglerInputStream(relayConfig));
 			} catch (IOException ex) {
 			}
 		}
@@ -85,12 +85,12 @@ public class RelayManager {
 		}
 	}
 
-	private void load(NBTTagList relayConfig) {
+	private void load(ListTag relayConfig) {
 		relays.clear();
 		if(relayConfig != null && relayConfig.tagCount() > 0) {
 			boolean gotAPrimary = false;
 			for(int i = 0, l = relayConfig.tagCount(); i < l; ++i) {
-				NBTTagCompound relay = relayConfig.getCompoundTagAt(i);
+				CompoundTag relay = relayConfig.getCompoundTagAt(i);
 				boolean p = relay.getBoolean("primary");
 				if(p) {
 					if(gotAPrimary) {
@@ -117,22 +117,22 @@ public class RelayManager {
 	
 	public byte[] write() {
 		try {
-			NBTTagList lst = new NBTTagList();
+			ListTag lst = new ListTag();
 			for(int i = 0, l = relays.size(); i < l; ++i) {
 				RelayServer srv = relays.get(i);
-				NBTTagCompound etr = new NBTTagCompound();
+				CompoundTag etr = new CompoundTag();
 				etr.setString("addr", srv.address);
 				etr.setString("comment", srv.comment);
 				etr.setBoolean("primary", srv.isPrimary());
 				lst.appendTag(etr);
 			}
 
-			NBTTagCompound nbttagcompound = new NBTTagCompound();
+			CompoundTag nbttagcompound = new CompoundTag();
 			nbttagcompound.setTag("relays", lst);
 			nbttagcompound.setBoolean("f", true);
 
 			EaglerOutputStream bao = new EaglerOutputStream();
-			CompressedStreamTools.writeCompressed(nbttagcompound, bao);
+			NbtIo.writeCompressed(nbttagcompound, bao);
 			return bao.toByteArray();
 		} catch (Exception exception) {
 			logger.error("Couldn\'t save relay list!");

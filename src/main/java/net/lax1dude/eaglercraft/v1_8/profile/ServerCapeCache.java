@@ -25,9 +25,9 @@ import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.CPacketGetOtherCapeEAG;
-import net.minecraft.client.network.NetHandlerPlayClient;
+import net.lax1dude.eaglercraft.v1_8.socket.EaglercraftNetworkManager;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class ServerCapeCache {
 
@@ -100,7 +100,7 @@ public class ServerCapeCache {
 	private final Map<EaglercraftUUID, Long> waitingCapes = new HashMap<>();
 	private final Map<EaglercraftUUID, Long> evictedCapes = new HashMap<>();
 
-	private final NetHandlerPlayClient netHandler;
+	private final EaglercraftNetworkManager netHandler;
 	protected final TextureManager textureManager;
 	
 	private final EaglercraftUUID clientPlayerId;
@@ -113,7 +113,7 @@ public class ServerCapeCache {
 	private static int texId = 0;
 	public static boolean needReloadClientCape = false;
 
-	public ServerCapeCache(NetHandlerPlayClient netHandler, TextureManager textureManager) {
+	public ServerCapeCache(EaglercraftNetworkManager netHandler, TextureManager textureManager) {
 		this.netHandler = netHandler;
 		this.textureManager = textureManager;
 		this.clientPlayerId = EaglerProfile.getPlayerUUID();

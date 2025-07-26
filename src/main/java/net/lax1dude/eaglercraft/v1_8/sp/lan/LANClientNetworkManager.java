@@ -28,11 +28,11 @@ import net.lax1dude.eaglercraft.v1_8.netty.Unpooled;
 import net.lax1dude.eaglercraft.v1_8.socket.EaglercraftNetworkManager;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
 import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.*;
-import net.minecraft.network.EnumPacketDirection;
-import net.minecraft.network.Packet;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 		return clientDisconnected ? EnumEaglerConnectionState.CLOSED : EnumEaglerConnectionState.CONNECTED;
 	}
 
-	public static LANClientNetworkManager connectToWorld(RelayServerSocket sock, String displayCode, String displayRelay) {
+	public static LANClientNetworkManager connectToLevel(RelayServerSocket sock, String displayCode, String displayRelay) {
 		PlatformWebRTC.clearLANClientState();
 		int connectState = PRE;
 		RelayPacket pkt;
@@ -249,7 +249,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 
 		int i;
 		try {
-			i = packetState.getPacketId(EnumPacketDirection.SERVERBOUND, pkt);
+			i = packetState.getPacketId(PacketFlow.SERVERBOUND, pkt);
 		}catch(Throwable t) {
 			logger.error("Incorrect packet for state: {}", pkt.getClass().getSimpleName());
 			return;
@@ -311,7 +311,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 					// 1.5 kick packet
 					if(data.length == 31 && data[0] == (byte)0xFF && data[1] == (byte)0x00 && data[2] == (byte)0x0E) {
 						logger.error("Detected a 1.5 LAN server!");
-						this.closeChannel(new ChatComponentTranslation("singleplayer.outdatedLANServerKick"));
+						this.closeChannel(new Component("singleplayer.outdatedLANServerKick"));
 						firstPacket = false;
 						return;
 					}
@@ -369,12 +369,12 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 				ByteBuf nettyBuffer = Unpooled.buffer(fullData, fullData.length);
 				nettyBuffer.writerIndex(fullData.length);
 				nettyBuffer.readerIndex(off);
-				PacketBuffer input = new PacketBuffer(nettyBuffer);
+				FriendlyByteBuf input = new FriendlyByteBuf(nettyBuffer);
 				int pktId = input.readVarIntFromBuffer();
 
 				Packet pkt;
 				try {
-					pkt = packetState.getPacket(EnumPacketDirection.CLIENTBOUND, pktId);
+					pkt = packetState.getPacket(PacketFlow.CLIENTBOUND, pktId);
 				}catch(IllegalAccessException | InstantiationException ex) {
 					throw new IOException("Recieved a packet with type " + pktId + " which is invalid!");
 				}
@@ -400,7 +400,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 	}
 
 	@Override
-	public void closeChannel(IChatComponent reason) {
+	public void closeChannel(Component reason) {
 		if(!PlatformWebRTC.clientLANClosed()) {
 			PlatformWebRTC.clientLANCloseConnection();
 		}
@@ -418,7 +418,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 				processReceivedPackets(); // catch kick message
 			} catch (IOException e) {
 			}
-			doClientDisconnect(new ChatComponentTranslation("disconnect.endOfStream"));
+			doClientDisconnect(new Component("disconnect.endOfStream"));
 		}
 		return clientDisconnected;
 	}

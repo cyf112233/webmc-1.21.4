@@ -95,8 +95,8 @@ public class RelayWorldsQueryImpl implements RelayWorldsQuery {
 				}else {
 					try {
 						RelayPacket pkt = RelayPacket.readPacket(new DataInputStream(new EaglerInputStream(arr)), loggerImpl);
-						if(pkt instanceof RelayPacket07LocalWorlds) {
-							worlds = ((RelayPacket07LocalWorlds)pkt).worldsList;
+						if(pkt instanceof RelayPacket07LocalLevels) {
+							worlds = ((RelayPacket07LocalLevels)pkt).worldsList;
 							sock.close();
 							failed = false;
 							return;
@@ -126,7 +126,7 @@ public class RelayWorldsQueryImpl implements RelayWorldsQuery {
 							throw new IOException("Unexpected packet '" + pkt.getClass().getSimpleName() + "'");
 						}
 					} catch (IOException e) {
-						logger.error("Relay World Query Error: {}", e.toString());
+						logger.error("Relay Level Query Error: {}", e.toString());
 						EagRuntime.debugPrintStackTrace(e);
 						failed = true;
 						sock.close();
@@ -183,7 +183,7 @@ public class RelayWorldsQueryImpl implements RelayWorldsQuery {
 	}
 
 	@Override
-	public List<RelayPacket07LocalWorlds.LocalWorld> getWorlds() {
+	public List<RelayPacket07LocalWorlds.LocalWorld> getLevels() {
 		return worlds;
 	}
 

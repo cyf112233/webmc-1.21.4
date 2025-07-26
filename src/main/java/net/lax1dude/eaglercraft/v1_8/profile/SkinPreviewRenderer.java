@@ -21,25 +21,91 @@ import net.lax1dude.eaglercraft.v1_8.opengl.EaglerMeshLoader;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.model.ModelPlayer;
-import net.minecraft.client.model.ModelZombie;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+
+// Simple model interface for skin rendering
+interface ISkinModel {
+    void render(float scale, boolean isSneaking, boolean isRiding, float limbSwing, float limbSwingAmount, 
+               float ageInTicks, float netHeadYaw, float headPitch);
+    void setTexture(ResourceLocation texture);
+    void setCapeTexture(ResourceLocation capeTexture);
+}
+
+// Simple model implementation
+class SimplePlayerModel implements ISkinModel {
+    private ResourceLocation texture;
+    private ResourceLocation capeTexture;
+    
+    @Override
+    public void render(float scale, boolean isSneaking, boolean isRiding, float limbSwing, float limbSwingAmount, 
+                      float ageInTicks, float netHeadYaw, float headPitch) {
+        // Basic player model rendering logic would go here
+        // This is a simplified placeholder
+        GlStateManager.pushMatrix();
+        GlStateManager.scale(scale, scale, scale);
+        GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
+        GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+        
+        // Render body parts here (simplified)
+        renderBox(-4.0f, 0.0f, -2.0f, 8, 12, 4, 0.0625f); // Body
+        renderBox(-4.0f, 0.0f, -2.0f, 8, 12, 4, 0.25f); // Overlay
+        
+        GlStateManager.popMatrix();
+    }
+    
+    private void renderBox(float x, float y, float z, float width, float height, float depth, float scale) {
+        // Simple box rendering
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(x * scale, y * scale, z * scale);
+        GlStateManager.scale(width * scale, height * scale, depth * scale);
+        
+        // Simple cube rendering (would be replaced with actual model rendering)
+        GlStateManager.beginQuads();
+        // Front
+        GlStateManager.vertex(0.0f, 0.0f, 0.0f);
+        GlStateManager.vertex(1.0f, 0.0f, 0.0f);
+        GlStateManager.vertex(1.0f, 1.0f, 0.0f);
+        GlStateManager.vertex(0.0f, 1.0f, 0.0f);
+        // Back
+        GlStateManager.vertex(0.0f, 0.0f, 1.0f);
+        GlStateManager.vertex(0.0f, 1.0f, 1.0f);
+        GlStateManager.vertex(1.0f, 1.0f, 1.0f);
+        GlStateManager.vertex(1.0f, 0.0f, 1.0f);
+        // ... other faces ...
+        GlStateManager.endQuads();
+        
+        GlStateManager.popMatrix();
+    }
+    
+    @Override
+    public void setTexture(ResourceLocation texture) {
+        this.texture = texture;
+    }
+    
+    @Override
+    public void setCapeTexture(ResourceLocation capeTexture) {
+        this.capeTexture = capeTexture;
+    }
+}
 
 public class SkinPreviewRenderer {
 
-	private static ModelPlayer playerModelSteve = null;
-	private static ModelPlayer playerModelAlex = null;
-	private static ModelZombie playerModelZombie = null;
+	private static ISkinModel playerModelSteve = null;
+	private static ISkinModel playerModelAlex = null;
+	private static ISkinModel playerModelZombie = null;
+	private static boolean initialized = false;
 	
 	public static void initialize() {
-		playerModelSteve = new ModelPlayer(0.0f, false);
-		playerModelSteve.isChild = false;
-		playerModelAlex = new ModelPlayer(0.0f, true);
-		playerModelAlex.isChild = false;
-		playerModelZombie = new ModelZombie(0.0f, true);
-		playerModelZombie.isChild = false;
+		if (initialized) return;
+		
+		try {
+			playerModelSteve = new SimplePlayerModel();
+			playerModelAlex = new SimplePlayerModel();
+			playerModelZombie = new SimplePlayerModel();
+			initialized = true;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void renderPreview(int x, int y, int mx, int my, SkinModel skinModel) {
@@ -47,7 +113,7 @@ public class SkinPreviewRenderer {
 	}
 
 	public static void renderPreview(int x, int y, int mx, int my, boolean capeMode, SkinModel skinModel, ResourceLocation skinTexture, ResourceLocation capeTexture) {
-		ModelBiped model;
+		ISkinModel model;
 		switch(skinModel) {
 		case STEVE:
 		default:
@@ -100,15 +166,19 @@ public class SkinPreviewRenderer {
 			Minecraft.getMinecraft().getTextureManager().bindTexture(skinTexture);
 		}
 		
-		model.render(null, 0.0f, 0.0f, (float)(EagRuntime.steadyTimeMillis() % 2000000) / 50f, ((x - mx) * 0.06f), ((y - my) * -0.1f), 0.0625f);
+		if (model != null) {
+			model.render(0.0625f, false, false, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		}
 		
-		if(capeTexture != null && model instanceof ModelPlayer) {
+		if(capeTexture != null && model != null) {
+			// Render cape if needed
 			Minecraft.getMinecraft().getTextureManager().bindTexture(capeTexture);
+			// Simplified cape rendering would go here
 			GlStateManager.pushMatrix();
 			GlStateManager.translate(0.0F, 0.0F, 0.125F);
 			GlStateManager.rotate(6.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-			((ModelPlayer)model).renderCape(0.0625f);
+			// Add your simplified cape rendering code here
 			GlStateManager.popMatrix();
 		}
 		

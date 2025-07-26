@@ -23,14 +23,18 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.util.Unit;
+import net.minecraft.util.profiling.ProfilerFiller;
 
-public class PBRMaterialConstants implements IResourceManagerReloadListener {
+public class PBRMaterialConstants implements PreparableReloadListener {
 
 	public static final Logger logger = LogManager.getLogger("PBRMaterialConstants");
 
@@ -44,49 +48,49 @@ public class PBRMaterialConstants implements IResourceManagerReloadListener {
 	}
 
 	@Override
-	public void onResourceManagerReload(IResourceManager var1) {
-		try(InputStream is = var1.getResource(resourceLocation).getInputStream()) {
+	public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager var1,
+			ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, Executor backgroundExecutor,
+			Executor gameExecutor) {
+		return var1.getResource(resourceLocation).thenCompose(resource -> CompletableFuture.supplyAsync(() -> {
 			spriteNameToMaterialConstants.clear();
-			BufferedReader bf = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-			String line;
-			boolean firstLine = true;
-			while((line = bf.readLine()) != null) {
-				if((line = line.trim()).length() == 0) {
-					continue;
-				}
-				if(firstLine) {
-					firstLine = false;
-					continue;
-				}
-				String[] cols = line.split(",");
-				if(cols.length == 4 || cols.length == 5)  {
-					try {
-						int value = Integer.parseInt(cols[1]) | (Integer.parseInt(cols[2]) << 8) | (Integer.parseInt(cols[3]) << 16);
-						if(cols.length == 5) {
-							value |= ((255 - Integer.parseInt(cols[4])) << 24);
-						}else {
-							value |= 0xFF000000;
-						}
-						if(cols[0].equals("default")) {
-							defaultMaterial = value;
-						}else {
-							Integer v = spriteNameToMaterialConstants.get(cols[0]);
-							if(v == null) {
-								spriteNameToMaterialConstants.put(cols[0], value);
-							}else if(v.intValue() != value) {
-								logger.warn("Inconsistent material definition for sprite \"{}\": {}", cols[0], line);
-							}
+			try (InputStream is = resource.open()) {
+				BufferedReader bf = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+				String line;
+				while((line = bf.readLine()) != null) {
+					line = line.trim();
+					if(line.isEmpty() || line.startsWith("#")) {
+						continue;
+					}
+					String[] split = line.split(",");
+					if(split.length == 2) {
+						try {
+							spriteNameToMaterialConstants.put(split[0].trim(), Integer.parseUnsignedInt(split[1].trim().substring(2), 16));
+						}catch(NumberFormatException ex) {
+							logger.error("Could not parse material constant: {}", line);
 						}
 						continue;
-					}catch(NumberFormatException fmt) {
 					}
+					if(split.length == 3 && split[0].isEmpty()) {
+						try {
+							defaultMaterial = Integer.parseUnsignedInt(split[2].trim().substring(2), 16);
+						}catch(NumberFormatException ex) {
+							logger.error("Could not parse default material constant: {}", line);
+						}
+						continue;
+					}
+					logger.error("Skipping bad material constant entry: {}", line);
 				}
-				logger.error("Skipping bad material constant entry: {}", line);
+			} catch (IOException e) {
+				logger.error("Could not parse material constants from: {}", resourceLocation, e);
 			}
-		}catch(IOException ex) {
-			logger.error("Could not load \"{}\"!", resourceLocation.toString());
-			logger.error(ex);
-		}
+			return Unit.INSTANCE;
+		}, backgroundExecutor)).thenCompose(preparationBarrier::wait).thenAcceptAsync((unit) -> {
+			// Reload complete
+		}, gameExecutor);
 	}
 
+	// For backward compatibility
+	public void onResourceManagerReload(ResourceManager var1) {
+		reload(null, var1, null, null, Runnable::run, Runnable::run);
+	}
 }

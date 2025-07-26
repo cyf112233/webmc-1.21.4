@@ -25,14 +25,14 @@ import com.google.common.collect.Lists;
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Bootstrap;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.EnumDifficulty;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.WorldSettings;
-import net.minecraft.world.WorldSettings.GameType;
+import net.minecraft.world.Difficulty;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.GameType; // MCP Reborn 1.21.4 package
 import net.lax1dude.eaglercraft.v1_8.sp.server.skins.IntegratedCapeService;
 import net.lax1dude.eaglercraft.v1_8.sp.server.skins.IntegratedSkinService;
 import net.lax1dude.eaglercraft.v1_8.sp.server.voice.IntegratedVoiceService;
@@ -41,11 +41,11 @@ public class EaglerMinecraftServer extends MinecraftServer {
 
 	public static final Logger logger = EaglerIntegratedServerWorker.logger;
 
-	public static final VFile2 savesDir = WorldsDB.newVFile("worlds");
+	public static final VFile2 savesDir = LevelsDB.newVFile("worlds");
 
-	protected EnumDifficulty difficulty;
-	protected GameType gamemode;
-	protected WorldSettings newWorldSettings;
+	protected Difficulty difficulty;
+	protected net.minecraft.world.level.GameType gamemode; // MCP Reborn 1.21.4 class
+	protected LevelSettings newLevelSettings;
 	protected boolean paused;
 	protected EaglerSaveHandler saveHandler;
 	protected IntegratedSkinService skinService;
@@ -63,20 +63,20 @@ public class EaglerMinecraftServer extends MinecraftServer {
 
 	private final List<Runnable> scheduledTasks = new LinkedList<>();
 
-	public EaglerMinecraftServer(String world, String owner, int viewDistance, WorldSettings currentWorldSettings, boolean demo) {
+	public EaglerMinecraftServer(String world, String owner, int viewDistance, LevelSettings currentLevelSettings, boolean demo) {
 		super(world);
 		Bootstrap.register();
 		this.saveHandler = new EaglerSaveHandler(savesDir, world);
-		this.skinService = new IntegratedSkinService(WorldsDB.newVFile(saveHandler.getWorldDirectory(), "eagler/skulls"));
+		this.skinService = new IntegratedSkinService(LevelsDB.newVFile(saveHandler.getLevelDirectory(), "eagler/skulls"));
 		this.capeService = new IntegratedCapeService();
 		this.voiceService = null;
 		this.setServerOwner(owner);
 		logger.info("server owner: " + owner);
 		this.setDemo(demo);
-		this.canCreateBonusChest(currentWorldSettings != null && currentWorldSettings.isBonusChestEnabled());
+		this.canCreateBonusChest(currentLevelSettings != null && currentLevelSettings.isBonusChestEnabled());
 		this.setBuildLimit(256);
 		this.setConfigManager(new EaglerPlayerList(this, viewDistance));
-		this.newWorldSettings = currentWorldSettings;
+		this.newLevelSettings = currentLevelSettings;
 		this.paused = false;
 	}
 
@@ -98,14 +98,14 @@ public class EaglerMinecraftServer extends MinecraftServer {
 				voiceService.changeICEServers(iceServers);
 			}else {
 				voiceService = new IntegratedVoiceService(iceServers);
-				for(EntityPlayerMP player : getConfigurationManager().func_181057_v()) {
+				for(ServerPlayer player : getConfigurationManager().func_181057_v()) {
 					voiceService.handlePlayerLoggedIn(player);
 				}
 			}
 		}
 	}
 
-	public void setBaseServerProperties(EnumDifficulty difficulty, GameType gamemode) {
+	public void setBaseServerProperties(Difficulty difficulty, net.minecraft.world.level.GameType gamemode) { // MCP Reborn 1.21.4 class
 		this.difficulty = difficulty;
 		this.gamemode = gamemode;
 		this.setCanSpawnAnimals(true);
@@ -122,15 +122,15 @@ public class EaglerMinecraftServer extends MinecraftServer {
 	@Override
 	protected boolean startServer() throws IOException {
 		logger.info("Starting integrated eaglercraft server version 1.8.8");
-		this.loadAllWorlds(saveHandler, this.getWorldName(), newWorldSettings);
+		this.loadAllLevels(saveHandler, this.getLevelName(), newLevelSettings);
 		serverRunning = true;
 		return true;
 	}
 
-	public void deleteWorldAndStopServer() {
-		super.deleteWorldAndStopServer();
+	public void deleteLevelAndStopServer() {
+		super.deleteLevelAndStopServer();
 		logger.info("Deleting world...");
-		EaglerIntegratedServerWorker.saveFormat.deleteWorldDirectory(getFolderName());
+		EaglerIntegratedServerWorker.saveFormat.deleteLevelDirectory(getFolderName());
 	}
 
 	public void mainLoop(boolean singleThreadMode) {
@@ -197,7 +197,7 @@ public class EaglerMinecraftServer extends MinecraftServer {
 		}
 	}
 
-	private static int countChunksLoaded(WorldServer[] worlds) {
+	private static int countChunksLoaded(ServerLevel[] worlds) {
 		int i = 0;
 		for(int j = 0; j < worlds.length; ++j) {
 			if(worlds[j] != null) {
@@ -207,13 +207,13 @@ public class EaglerMinecraftServer extends MinecraftServer {
 		return i;
 	}
 
-	private static int countChunksTotal(WorldServer[] worlds) {
+	private static int countChunksTotal(ServerLevel[] worlds) {
 		int i = 0;
 		for(int j = 0; j < worlds.length; ++j) {
 			if(worlds[j] != null) {
-				List<EntityPlayer> players = worlds[j].playerEntities;
+				List<Player> players = worlds[j].playerEntities;
 				for(int l = 0, n = players.size(); l < n; ++l) {
-					i += ((EntityPlayerMP)players.get(l)).loadedChunks.size();
+					i += ((ServerPlayer)players.get(l)).loadedChunks.size();
 				}
 				i += worlds[j].theChunkProviderServer.getLoadedChunkCount();
 			}
@@ -221,7 +221,7 @@ public class EaglerMinecraftServer extends MinecraftServer {
 		return i;
 	}
 
-	private static int countEntities(WorldServer[] worlds) {
+	private static int countEntities(ServerLevel[] worlds) {
 		int i = 0;
 		for(int j = 0; j < worlds.length; ++j) {
 			if(worlds[j] != null) {
@@ -231,7 +231,7 @@ public class EaglerMinecraftServer extends MinecraftServer {
 		return i;
 	}
 
-	private static int countTileEntities(WorldServer[] worlds) {
+	private static int countTileEntities(ServerLevel[] worlds) {
 		int i = 0;
 		for(int j = 0; j < worlds.length; ++j) {
 			if(worlds[j] != null) {
@@ -241,7 +241,7 @@ public class EaglerMinecraftServer extends MinecraftServer {
 		return i;
 	}
 
-	private static int countPlayerEntities(WorldServer[] worlds) {
+	private static int countPlayerEntities(ServerLevel[] worlds) {
 		int i = 0;
 		for(int j = 0; j < worlds.length; ++j) {
 			if(worlds[j] != null) {
@@ -264,22 +264,22 @@ public class EaglerMinecraftServer extends MinecraftServer {
 
 	@Override
 	public boolean canStructuresSpawn() {
-		return worldServers != null ? worldServers[0].getWorldInfo().isMapFeaturesEnabled() : newWorldSettings.isMapFeaturesEnabled();
+		return worldServers != null ? worldServers[0].getLevelData().isMapFeaturesEnabled() : newLevelSettings.isMapFeaturesEnabled();
 	}
 
 	@Override
-	public GameType getGameType() {
-		return worldServers != null ? worldServers[0].getWorldInfo().getGameType() : newWorldSettings.getGameType();
+	public net.minecraft.world.level.GameType getGameType() { // MCP Reborn 1.21.4 class
+		return worldServers != null ? worldServers[0].getLevelData().getGameType() : newLevelSettings.getGameType();
 	}
 
 	@Override
-	public EnumDifficulty getDifficulty() {
+	public Difficulty getDifficulty() {
 		return difficulty;
 	}
 
 	@Override
 	public boolean isHardcore() {
-		return worldServers != null ? worldServers[0].getWorldInfo().isHardcoreModeEnabled() : newWorldSettings.getHardcoreEnabled();
+		return worldServers != null ? worldServers[0].getLevelData().isHardcoreModeEnabled() : newLevelSettings.getHardcoreEnabled();
 	}
 
 	@Override
@@ -313,7 +313,7 @@ public class EaglerMinecraftServer extends MinecraftServer {
 	}
 
 	@Override
-	public String shareToLAN(GameType var1, boolean var2) {
+	public String shareToLAN(net.minecraft.world.level.GameType var1, boolean var2) { // MCP Reborn 1.21.4 class
 		return null;
 	}
 

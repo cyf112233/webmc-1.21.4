@@ -21,23 +21,24 @@ import net.lax1dude.eaglercraft.v1_8.internal.KeyboardConstants;
 import net.lax1dude.eaglercraft.v1_8.minecraft.EnumInputEvent;
 import net.lax1dude.eaglercraft.v1_8.socket.ConnectionHandshake;
 import net.lax1dude.eaglercraft.v1_8.socket.HandshakePacketTypes;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.multiplayer.GuiConnecting;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.network.chat.Component;
+// TranslatableComponent is now part of Component in newer versions
 
-public class GuiAuthenticationScreen extends GuiScreen {
+public class GuiAuthenticationScreen extends Screen {
 
-	private final GuiConnecting retAfterAuthScreen;
-	private final GuiScreen parent;
-	private GuiButton continueButton;
+	private final ConnectScreen retAfterAuthScreen;
+	private final Screen parent;
+	private Button continueButton;
 	private final String message;
 
 	private GuiPasswordTextField password;
 	private int authTypeForWarning = Integer.MAX_VALUE;
 	private boolean allowPlaintext = false;
 
-	public GuiAuthenticationScreen(GuiConnecting retAfterAuthScreen, GuiScreen parent, String message) {
+	public GuiAuthenticationScreen(ConnectScreen retAfterAuthScreen, Screen parent, String message) {
 		this.retAfterAuthScreen = retAfterAuthScreen;
 		this.parent = parent;
 		String authRequired = HandshakePacketTypes.AUTHENTICATION_REQUIRED;
@@ -64,22 +65,22 @@ public class GuiAuthenticationScreen extends GuiScreen {
 
 	public void initGui() {
 		if(authTypeForWarning != Integer.MAX_VALUE) {
-			GuiScreen scr = ConnectionHandshake.displayAuthProtocolConfirm(authTypeForWarning, parent, this);
+			Screen scr = ConnectionHandshake.displayAuthProtocolConfirm(authTypeForWarning, parent, this);
 			authTypeForWarning = Integer.MAX_VALUE;
 			if(scr != null) {
-				mc.displayGuiScreen(scr);
+				mc.displayScreen(scr);
 				allowPlaintext = true;
 				return;
 			}
 		}
 		Keyboard.enableRepeatEvents(true);
 		this.buttonList.clear();
-		this.buttonList.add(continueButton = new GuiButton(1, this.width / 2 - 100, this.height / 4 + 80 + 12,
-				I18n.format("auth.continue", new Object[0])));
+		this.buttonList.add(continueButton = new net.minecraft.client.gui.components.Button(1, this.width / 2 - 100, this.height / 4 + 80 + 12,
+				I18n.get("auth.continue", new Object[0])));
 		continueButton.enabled = false;
-		this.buttonList.add(new GuiButton(0, this.width / 2 - 100, this.height / 4 + 80 + 37,
-				I18n.format("gui.cancel", new Object[0])));
-		this.password = new GuiPasswordTextField(2, this.fontRendererObj, this.width / 2 - 100, this.height / 4 + 40, 200, 20); // 116
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(0, this.width / 2 - 100, this.height / 4 + 80 + 37,
+				I18n.get("gui.cancel", new Object[0])));
+		this.password = new GuiPasswordTextField(2, this.font, this.width / 2 - 100, this.height / 4 + 40, 200, 20); // 116
 		this.password.setFocused(true);
 		this.password.setCanLoseFocus(false);
 	}
@@ -88,27 +89,27 @@ public class GuiAuthenticationScreen extends GuiScreen {
 		Keyboard.enableRepeatEvents(false);
 	}
 
-	protected void actionPerformed(GuiButton parGuiButton) {
-		if(parGuiButton.id == 1) {
-			this.mc.displayGuiScreen(new GuiConnecting(retAfterAuthScreen, password.getText()));
+	protected void actionPerformed(net.minecraft.client.gui.components.Button parButton) {
+		if(parButton.id == 1) {
+			this.minecraft.displayScreen(new GuiConnecting(retAfterAuthScreen, password.getText()));
 		}else {
-			this.mc.displayGuiScreen(parent);
+			this.minecraft.displayScreen(parent);
 		}
 	}
 
 	public void drawScreen(int i, int j, float var3) {
 		drawBackground(0);
 		this.password.drawTextBox();
-		this.drawCenteredString(this.fontRendererObj, I18n.format("auth.required", new Object[0]), this.width / 2,
+		this.drawCenteredString(this.font, I18n.get("auth.required", new Object[0]), this.width / 2,
 				this.height / 4 - 5, 16777215);
-		this.drawCenteredString(this.fontRendererObj, message, this.width / 2, this.height / 4 + 15, 0xAAAAAA);
+		this.drawCenteredString(this.font, message, this.width / 2, this.height / 4 + 15, 0xAAAAAA);
 		super.drawScreen(i, j, var3);
 	}
 
 	protected void keyTyped(char parChar1, int parInt1) {
 		String pass = password.getText();
 		if(parInt1 == KeyboardConstants.KEY_RETURN && pass.length() > 0) {
-			this.mc.displayGuiScreen(new GuiConnecting(retAfterAuthScreen, pass, allowPlaintext));
+			this.minecraft.displayScreen(new GuiConnecting(retAfterAuthScreen, pass, allowPlaintext));
 		}else {
 			this.password.textboxKeyTyped(parChar1, parInt1);
 			this.continueButton.enabled = password.getText().length() > 0;

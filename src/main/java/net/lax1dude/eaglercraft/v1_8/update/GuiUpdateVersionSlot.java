@@ -27,11 +27,11 @@ import java.util.List;
 import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.client.gui.GuiSlot;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.resources.ResourceLocation;
 
-public class GuiUpdateVersionSlot extends GuiSlot {
+public class GuiUpdateVersionSlot extends ContainerObjectSelectionList {
 
 	private static final ResourceLocation eaglerGuiTex = new ResourceLocation("eagler:gui/eagler_gui.png");
 
@@ -92,7 +92,7 @@ public class GuiUpdateVersionSlot extends GuiSlot {
 	@Override
 	protected void drawSlot(int id, int xx, int yy, int width, int height, int ii) {
 		if(id < certList.size()) {
-			this.mc.getTextureManager().bindTexture(eaglerGuiTex);
+			this.minecraft.getTextureManager().bindTexture(eaglerGuiTex);
 			GlStateManager.pushMatrix();
 			GlStateManager.translate(xx, yy, 0.0f);
 			GlStateManager.pushMatrix();
@@ -106,23 +106,23 @@ public class GuiUpdateVersionSlot extends GuiSlot {
 			GlStateManager.translate(iconSize + 1, 0.0f, 0.0f);
 			GlStateManager.scale(0.75f, 0.75f, 0.75f);
 			UpdateCertificate cert = certList.get(id);
-			screen.drawString(mc.fontRendererObj,
-					EnumChatFormatting.WHITE + cert.bundleDisplayName + EnumChatFormatting.GRAY + " - "
+			screen.drawString(mc.font,
+					ChatFormatting.WHITE + cert.bundleDisplayName + ChatFormatting.GRAY + " - "
 							+ (cert.bundleVersionInteger > EaglercraftVersion.updateBundlePackageVersionInt
-									? EnumChatFormatting.GREEN
+									? ChatFormatting.GREEN
 									: (cert.bundleVersionInteger < EaglercraftVersion.updateBundlePackageVersionInt
-											? EnumChatFormatting.RED
-											: EnumChatFormatting.YELLOW))
-							+ cert.bundleDisplayVersion + EnumChatFormatting.DARK_GRAY + " "
-							+ cert.bundleVersionInteger + " " + EnumChatFormatting.GRAY
-							+ dateFmt.format(new Date(cert.sigTimestamp)) + EnumChatFormatting.WHITE + " " + (cert.bundleDataLength / 1024) + " kB",
+											? ChatFormatting.RED
+											: ChatFormatting.YELLOW))
+							+ cert.bundleDisplayVersion + ChatFormatting.DARK_GRAY + " "
+							+ cert.bundleVersionInteger + " " + ChatFormatting.GRAY
+							+ dateFmt.format(new Date(cert.sigTimestamp)) + ChatFormatting.WHITE + " " + (cert.bundleDataLength / 1024) + " kB",
 					2, 2, 0xFFFFFF);
-			List<String> strs = (List<String>)mc.fontRendererObj.listFormattedStringToWidth(cert.bundleVersionComment, (int)((getListWidth() - iconSize - 6) * 1.25f));
+			List<String> strs = (List<String>)mc.font.listFormattedStringToWidth(cert.bundleVersionComment, (int)((getListWidth() - iconSize - 6) * 1.25f));
 			if(strs.size() > 0) {
-				screen.drawString(mc.fontRendererObj, strs.get(0), 2, 13, 0x888888);
+				screen.drawString(mc.font, strs.get(0), 2, 13, 0x888888);
 			}
 			if(strs.size() > 1) {
-				screen.drawString(mc.fontRendererObj, strs.get(1), 2, 24, 0x888888);
+				screen.drawString(mc.font, strs.get(1), 2, 24, 0x888888);
 			}
 			if(strs.size() > 2 && screen.mx > xx + iconSize && screen.my > yy + 8 && screen.mx < xx + getListWidth() - 5 && screen.my < yy + 25) {
 				screen.tooltip = cert.bundleVersionComment;
@@ -135,9 +135,9 @@ public class GuiUpdateVersionSlot extends GuiSlot {
 					hexChars[cert.bundleDataHash[29] & 0xF], hexChars[(cert.bundleDataHash[30] >>> 4) & 0xF],
 					hexChars[cert.bundleDataHash[30] & 0xF], hexChars[(cert.bundleDataHash[31] >>> 4) & 0xF],
 					hexChars[cert.bundleDataHash[31] & 0xF] };
-			screen.drawString(mc.fontRendererObj,
-					"Author: " + EnumChatFormatting.GRAY + cert.bundleAuthorName + EnumChatFormatting.WHITE + "  Hash: "
-							+ EnumChatFormatting.GRAY + "0x" + (new String(hexStr1)) + "......" + (new String(hexStr2)),
+			screen.drawString(mc.font,
+					"Author: " + ChatFormatting.GRAY + cert.bundleAuthorName + ChatFormatting.WHITE + "  Hash: "
+							+ ChatFormatting.GRAY + "0x" + (new String(hexStr1)) + "......" + (new String(hexStr2)),
 					2, 35, 0xFFFFFF);
 			GlStateManager.popMatrix();
 		}

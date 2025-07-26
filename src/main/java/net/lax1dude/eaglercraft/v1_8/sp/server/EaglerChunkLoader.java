@@ -19,18 +19,24 @@ package net.lax1dude.eaglercraft.v1_8.sp.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.world.ChunkCoordIntPair;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.AnvilChunkLoader;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.storage.ChunkStorage;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
-public class EaglerChunkLoader extends AnvilChunkLoader {
+public class EaglerChunkLoader extends ChunkStorage {
 
 	private static final String hex = "0123456789ABCDEF";
 	private static final Logger logger = LogManager.getLogger("EaglerChunkLoader");
@@ -48,7 +54,7 @@ public class EaglerChunkLoader extends AnvilChunkLoader {
 		return new String(path);
 	}
 
-	public static ChunkCoordIntPair getChunkCoords(String filename) {
+	public static ChunkPos getChunkCoords(String filename) {
 		String strX = filename.substring(0, 6);
 		String strZ = filename.substring(6);
 
@@ -60,7 +66,7 @@ public class EaglerChunkLoader extends AnvilChunkLoader {
 			retZ |= hex.indexOf(strZ.charAt(i)) << (i << 2);
 		}
 
-		return new ChunkCoordIntPair(retX - 1900000, retZ - 1900000);
+		return new ChunkPos(retX - 1900000, retZ - 1900000);
 	}
 
 	public final VFile2 chunkDirectory;
@@ -70,49 +76,69 @@ public class EaglerChunkLoader extends AnvilChunkLoader {
 	}
 
 	@Override
-	public Chunk loadChunk(World var1, int var2, int var3) throws IOException {
-		VFile2 file = WorldsDB.newVFile(chunkDirectory, getChunkPath(var2, var3) + ".dat");
+	public CompletableFuture<ChunkAccess> loadChunk(ServerLevel level, ChunkPos pos) {
+		VFile2 file = LevelsDB.newVFile(chunkDirectory, getChunkPath(pos.x, pos.z) + ".dat");
 		if(!file.exists()) {
-			return null;
+			return CompletableFuture.completedFuture(null);
 		}
 		try {
-			NBTTagCompound nbt;
+			CompoundTag nbt;
 			try(InputStream is = file.getInputStream()) {
-				nbt = CompressedStreamTools.readCompressed(is);
+				nbt = NbtIo.readCompressed(is);
 			}
-			return checkedReadChunkFromNBT(var1, var2, var3, nbt);
+			return CompletableFuture.completedFuture(checkedReadChunkFromNBT(level, pos, nbt));
 		}catch(Throwable t) {
-			
-		}
-		return null;
-	}
-
-	@Override
-	public void saveChunk(World var1, Chunk var2) throws IOException {
-		var1.alfheim$getLightingEngine().processLightUpdates();
-		NBTTagCompound chunkData = new NBTTagCompound();
-		this.writeChunkToNBT(var2, var1, chunkData);
-		NBTTagCompound fileData = new NBTTagCompound();
-		fileData.setTag("Level", chunkData);
-		VFile2 file = WorldsDB.newVFile(chunkDirectory, getChunkPath(var2.xPosition, var2.zPosition) + ".dat");
-		try(OutputStream os = file.getOutputStream()) {
-			CompressedStreamTools.writeCompressed(fileData, os);
+			return CompletableFuture.completedFuture(null);
 		}
 	}
 
 	@Override
-	public void saveExtraChunkData(World var1, Chunk var2) throws IOException {
-		// ?
+	public CompletableFuture<Void> saveChunk(ServerLevel level, ChunkAccess chunk) {
+		level.getLightEngine().updateSectionStatus(chunk.getPos(), true);
+		CompoundTag chunkData = new CompoundTag();
+		chunk.save(level.registryAccess(), chunkData);
+		CompoundTag fileData = new CompoundTag();
+		fileData.put("Level", chunkData);
+		
+		return CompletableFuture.runAsync(() -> {
+			try {
+				VFile2 file = LevelsDB.newVFile(chunkDirectory, 
+					getChunkPath(chunk.getPos().x, chunk.getPos().z) + ".dat");
+				try(OutputStream os = file.getOutputStream()) {
+					NbtIo.writeCompressed(fileData, os);
+				}
+			} catch (IOException e) {
+				logger.error("Failed to save chunk", e);
+			}
+		});
 	}
 
 	@Override
-	public void chunkTick() {
-		// ?
+	public CompletableFuture<Void> saveStructureData(ServerLevel level, ChunkPos pos, CompoundTag tag) {
+		// Not implemented for Eaglercraft
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
-	public void saveExtraData() {
-		// ?
+	public void tick() {
+		// Process any pending chunk operations
 	}
 
+	@Override
+	public void close() throws IOException {
+		// Clean up any resources
+	}
+
+	private ChunkAccess checkedReadChunkFromNBT(ServerLevel level, ChunkPos pos, CompoundTag nbt) {
+		try {
+			CompoundTag levelTag = nbt.getCompound("Level");
+			if (levelTag.isEmpty()) {
+				return null;
+			}
+			return level.getChunkSource().getChunkGenerator().createChunk(level, level.getBiomeManager(), pos, levelTag);
+		} catch (Exception e) {
+			logger.error("Failed to load chunk " + pos, e);
+			return null;
+		}
+	}
 }

@@ -28,15 +28,15 @@ import net.lax1dude.eaglercraft.v1_8.PointerInputAbstraction;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.sp.gui.GuiSlider2;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.sounds.WeighedSoundEvents;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.ChatFormatting;
+import net.minecraft.util.Mth;
+import net.minecraft.resources.ResourceLocation;
 
 public class GuiVoiceMenu extends Gui {
 
@@ -45,10 +45,10 @@ public class GuiVoiceMenu extends Gui {
 
 	private static final ResourceLocation voiceGuiIcons = new ResourceLocation("eagler:gui/eagler_gui.png");
 
-	protected final GuiScreen parent;
+	protected final Screen parent;
 
 	protected Minecraft mc;
-	protected FontRenderer fontRendererObj;
+	protected Font fontRendererObj;
 	protected int width;
 	protected int height;
 
@@ -100,10 +100,10 @@ public class GuiVoiceMenu extends Gui {
 	protected GuiSlider2 sliderListenVolume = null;
 	protected GuiSlider2 sliderSpeakVolume = null;
 
-	protected GuiButton applyRadiusButton = null;
-	protected GuiButton applyVolumeButton = null;
-	protected GuiButton noticeContinueButton = null;
-	protected GuiButton noticeCancelButton = null;
+	protected net.minecraft.client.gui.components.Button applyRadiusButton = null;
+	protected net.minecraft.client.gui.components.Button applyVolumeButton = null;
+	protected net.minecraft.client.gui.components.Button noticeContinueButton = null;
+	protected net.minecraft.client.gui.components.Button noticeCancelButton = null;
 
 	protected static boolean showingCompatWarning = false;
 	protected static boolean showCompatWarning = true;
@@ -113,13 +113,13 @@ public class GuiVoiceMenu extends Gui {
 	
 	protected static EnumVoiceChannelType continueChannel = null;
 	
-	public GuiVoiceMenu(GuiScreen parent) {
+	public GuiVoiceMenu(Screen parent) {
 		this.parent = parent;
 	}
 	
 	public void setResolution(Minecraft mc, int w, int h) {
-		this.mc = mc;
-		this.fontRendererObj = mc.fontRendererObj;
+		this.minecraft = mc;
+		this.font = mc.font;
 		this.width = w;
 		this.height = h;
 		initGui();
@@ -135,10 +135,10 @@ public class GuiVoiceMenu extends Gui {
 		this.sliderListenVolume = new GuiSlider2(-1, (width - 150) / 2, height / 3 + 10, 150, 20, VoiceClientController.getVoiceListenVolume(), 1.0f);
 		this.sliderSpeakVolume = new GuiSlider2(-1, (width - 150) / 2, height / 3 + 56, 150, 20, VoiceClientController.getVoiceSpeakVolume(), 1.0f);
 		
-		applyRadiusButton = new GuiButton(2, (width - 150) / 2, height / 3 + 49, 150, 20, I18n.format("voice.apply"));
-		applyVolumeButton = new GuiButton(3, (width - 150) / 2, height / 3 + 90, 150, 20, I18n.format("voice.apply"));
-		noticeContinueButton = new GuiButton(5, (width - 150) / 2, height / 3 + 60, 150, 20, I18n.format("voice.unsupportedWarning10"));
-		noticeCancelButton = new GuiButton(6, (width - 150) / 2, height / 3 + 90, 150, 20, I18n.format("voice.unsupportedWarning11"));
+		applyRadiusButton = new net.minecraft.client.gui.components.Button(2, (width - 150) / 2, height / 3 + 49, 150, 20, I18n.get("voice.apply"));
+		applyVolumeButton = new net.minecraft.client.gui.components.Button(3, (width - 150) / 2, height / 3 + 90, 150, 20, I18n.get("voice.apply"));
+		noticeContinueButton = new net.minecraft.client.gui.components.Button(5, (width - 150) / 2, height / 3 + 60, 150, 20, I18n.get("voice.unsupportedWarning10"));
+		noticeCancelButton = new net.minecraft.client.gui.components.Button(6, (width - 150) / 2, height / 3 + 90, 150, 20, I18n.get("voice.unsupportedWarning11"));
 		applyRadiusButton.visible = applyVolumeButton.visible = noticeContinueButton.visible = noticeCancelButton.visible = false;
 	}
 	
@@ -150,7 +150,7 @@ public class GuiVoiceMenu extends Gui {
 	}
 	
 	public void drawScreen(int mx, int my, float partialTicks) {
-		String txt = I18n.format("voice.title");
+		String txt = I18n.get("voice.title");
 		drawString(fontRendererObj, txt, width - 5 - fontRendererObj.getStringWidth(txt), 5, 0xFFCC22);
 		
 		applyRadiusButton.visible = showSliderBlocks;
@@ -165,8 +165,8 @@ public class GuiVoiceMenu extends Gui {
 				drawRect(width / 2 - 86, height / 4 - 1, this.width / 2 + 86, height / 3 + 64 + height / 16, 0xFFDDDDDD);
 				drawRect(width / 2 - 85, height / 4 + 0, this.width / 2 + 85, height / 3 + 63 + height / 16, 0xFF333333);
 				
-				drawCenteredString(this.fontRendererObj, I18n.format("voice.radiusTitle"), this.width / 2, height / 4 + 9, 16777215);
-				drawString(this.fontRendererObj, I18n.format("voice.radiusLabel"), (this.width - 150) / 2 + 3, height / 3 + 6, 0xCCCCCC);
+				drawCenteredString(this.font, I18n.get("voice.radiusTitle"), this.width / 2, height / 4 + 9, 16777215);
+				drawString(this.font, I18n.get("voice.radiusLabel"), (this.width - 150) / 2 + 3, height / 3 + 6, 0xCCCCCC);
 				sliderBlocks.drawButton(mc, mx, my);
 				
 			}else if(showSliderVolume) {
@@ -174,11 +174,11 @@ public class GuiVoiceMenu extends Gui {
 				drawRect(width / 2 - 86, height / 4 - 11, this.width / 2 + 86, height / 3 + 104 + height / 16, 0xFFDDDDDD);
 				drawRect(width / 2 - 85, height / 4 - 10, this.width / 2 + 85, height / 3 + 103 + height / 16, 0xFF333333);
 				
-				drawCenteredString(this.fontRendererObj, I18n.format("voice.volumeTitle"), this.width / 2, height / 4 - 1, 16777215);
-				drawString(this.fontRendererObj, I18n.format("voice.volumeListen"), (this.width - 150) / 2 + 3, height / 3 - 4, 0xCCCCCC);
+				drawCenteredString(this.font, I18n.get("voice.volumeTitle"), this.width / 2, height / 4 - 1, 16777215);
+				drawString(this.font, I18n.get("voice.volumeListen"), (this.width - 150) / 2 + 3, height / 3 - 4, 0xCCCCCC);
 				sliderListenVolume.drawButton(mc, mx, my);
 				
-				drawString(this.fontRendererObj, I18n.format("voice.volumeSpeak"), (this.width - 150) / 2 + 3, height / 3 + 42, 0xCCCCCC);
+				drawString(this.font, I18n.get("voice.volumeSpeak"), (this.width - 150) / 2 + 3, height / 3 + 42, 0xCCCCCC);
 				sliderSpeakVolume.drawButton(mc, mx, my);
 				
 			}else if(showPTTKeyConfig) {
@@ -190,10 +190,10 @@ public class GuiVoiceMenu extends Gui {
 					GlStateManager.pushMatrix();
 					GlStateManager.translate(this.width / 2, height / 3 + 5, 0.0f);
 					GlStateManager.scale(2.0f, 2.0f, 2.0f);
-					drawCenteredString(this.fontRendererObj, Keyboard.getKeyName(mc.gameSettings.voicePTTKey), 0, 0, 0xFFCC11);
+					drawCenteredString(this.font, Keyboard.getKeyName(mc.options.voicePTTKey), 0, 0, 0xFFCC11);
 					GlStateManager.popMatrix();
 				}else {
-					drawCenteredString(this.fontRendererObj, I18n.format("voice.pttChangeDesc"), this.width / 2, height / 3 + 8, 16777215);
+					drawCenteredString(this.font, I18n.get("voice.pttChangeDesc"), this.width / 2, height / 3 + 8, 16777215);
 				}
 			}
 			
@@ -207,16 +207,16 @@ public class GuiVoiceMenu extends Gui {
 		GlStateManager.scale(0.75f, 0.75f, 0.75f);
 		
 		if(!VoiceClientController.isClientSupported()) {
-			txt = I18n.format("voice.titleVoiceUnavailable");
+			txt = I18n.get("voice.titleVoiceUnavailable");
 			drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 6, 0xFF7777);
-			txt = I18n.format("voice.titleVoiceBrowserError");
+			txt = I18n.get("voice.titleVoiceBrowserError");
 			drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 19, 0xAA4444);
 			GlStateManager.popMatrix();
 			return;
 		}
 		
 		if(!VoiceClientController.isServerSupported()) {
-			txt = I18n.format("voice.titleNoVoice");
+			txt = I18n.get("voice.titleNoVoice");
 			drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 5, 0xFF7777);
 			GlStateManager.popMatrix();
 			return;
@@ -225,11 +225,11 @@ public class GuiVoiceMenu extends Gui {
 		int xo = 0;
 		// this feature is optional
 		//if(VoiceClientController.voiceRelayed()) {
-		//	txt = I18n.format("voice.warning1");
+		//	txt = I18n.get("voice.warning1");
 		//	drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 8, 0xBB9999);
-		//	txt = I18n.format("voice.warning2");
+		//	txt = I18n.get("voice.warning2");
 		//	drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 18, 0xBB9999);
-		//	txt = I18n.format("voice.warning3");
+		//	txt = I18n.get("voice.warning3");
 		//	drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 28, 0xBB9999);
 		//	xo = 43;
 		//	GlStateManager.translate(0.0f, xo, 0.0f);
@@ -246,7 +246,7 @@ public class GuiVoiceMenu extends Gui {
 			if(status == EnumVoiceChannelStatus.CONNECTED) {
 				
 				if(channel == EnumVoiceChannelType.PROXIMITY) {
-					txt = I18n.format("voice.connectedRadius").replace("$radius$", "" + VoiceClientController.getVoiceProximity()).replace("$f$", "");
+					txt = I18n.get("voice.connectedRadius").replace("$radius$", "" + VoiceClientController.getVoiceProximity()).replace("$f$", "");
 					int w = fontRendererObj.getStringWidth(txt);
 					int xx = width - 5 - (w * 3 / 4);
 					int yy = 15 + (xo * 3 / 4);
@@ -255,11 +255,11 @@ public class GuiVoiceMenu extends Gui {
 					voiceScreenButtonChangeRadiusposW = width - 3 - xx;
 					voiceScreenButtonChangeRadiusposH = 12;
 					if(mx >= xx && my >= yy && mx < xx + voiceScreenButtonChangeRadiusposW && my < yy + 12) {
-						txt = I18n.format("voice.connectedRadius").replace("$radius$", "" + VoiceClientController.getVoiceProximity())
-								.replace("$f$", "" + EnumChatFormatting.UNDERLINE) + EnumChatFormatting.RESET;
+						txt = I18n.get("voice.connectedRadius").replace("$radius$", "" + VoiceClientController.getVoiceProximity())
+								.replace("$f$", "" + ChatFormatting.UNDERLINE) + ChatFormatting.RESET;
 					}
 				}else {
-					txt = I18n.format("voice.connectedGlobal");
+					txt = I18n.get("voice.connectedGlobal");
 				}
 				
 				voiceScreenVolumeIndicatorX = width - 15 - (104 * 3 / 4);
@@ -303,7 +303,7 @@ public class GuiVoiceMenu extends Gui {
 				GlStateManager.pushMatrix();
 				GlStateManager.translate(-104.0f, 56.5f, 0.0f);
 				GlStateManager.scale(0.7f, 0.7f, 0.7f);
-				if((mc.currentScreen == null || !mc.currentScreen.blockPTTKey()) && Keyboard.isKeyDown(mc.gameSettings.voicePTTKey)) {
+				if((mc.screen == null || !mc.screen.blockPTTKey()) && Keyboard.isKeyDown(mc.options.voicePTTKey)) {
 					GlStateManager.color(0.9f, 0.4f, 0.4f, 1.0f);
 					drawTexturedModalRect(0, 0, 64, 64, 16, 16);
 				}else {
@@ -311,7 +311,7 @@ public class GuiVoiceMenu extends Gui {
 				}
 				GlStateManager.popMatrix();
 				
-				txt = I18n.format("voice.ptt", Keyboard.getKeyName(mc.gameSettings.voicePTTKey));
+				txt = I18n.get("voice.ptt", Keyboard.getKeyName(mc.options.voicePTTKey));
 				drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt) - 10, 76, 0x66DD66);
 
 				mc.getTextureManager().bindTexture(voiceGuiIcons);
@@ -322,7 +322,7 @@ public class GuiVoiceMenu extends Gui {
 				drawTexturedModalRect(0, 0, 32, 224, 32, 32);
 				GlStateManager.popMatrix();
 				
-				txt = I18n.format("voice.playersListening");
+				txt = I18n.get("voice.playersListening");
 				
 				GlStateManager.pushMatrix();
 				GlStateManager.translate(0.0f, 98.0f, 0.0f);
@@ -380,14 +380,14 @@ public class GuiVoiceMenu extends Gui {
 				}
 				
 			}else if(status == EnumVoiceChannelStatus.CONNECTING) {
-				float fadeTimer = MathHelper.sin((float)((EagRuntime.steadyTimeMillis() % 700l) * 0.0014d) * 3.14159f) * 0.35f + 0.3f;
-				txt = I18n.format("voice.connecting");
+				float fadeTimer = Mth.sin((float)((EagRuntime.steadyTimeMillis() % 700l) * 0.0014d) * 3.14159f) * 0.35f + 0.3f;
+				txt = I18n.get("voice.connecting");
 				GlStateManager.enableBlend();
 				GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 				drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 5, (0xFFDD77 | ((int)(Math.pow(fadeTimer, 1.0d / 2.2d) * 255.0f) << 24)));
 				GlStateManager.disableBlend();
 			}else if(status == EnumVoiceChannelStatus.UNAVAILABLE) {
-				txt = I18n.format("voice.unavailable");
+				txt = I18n.get("voice.unavailable");
 				drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 5, 0xFF3333);
 			}else {
 				flag = true;
@@ -395,13 +395,13 @@ public class GuiVoiceMenu extends Gui {
 		}
 		
 		if(flag) {
-			txt = I18n.format("voice.notConnected");
+			txt = I18n.get("voice.notConnected");
 			drawString(fontRendererObj, txt, 1 - fontRendererObj.getStringWidth(txt), 5, 0xBB9999);
 		}
 
-		String OFFstring = I18n.format("voice.off");
-		String RADIUSstring = I18n.format("voice.radius");
-		String GLOBALstring = I18n.format("voice.global");
+		String OFFstring = I18n.get("voice.off");
+		String RADIUSstring = I18n.get("voice.radius");
+		String GLOBALstring = I18n.get("voice.global");
 
 		int OFFwidth = fontRendererObj.getStringWidth(OFFstring);
 		int RADIUSwidth = fontRendererObj.getStringWidth(RADIUSstring);
@@ -479,17 +479,17 @@ public class GuiVoiceMenu extends Gui {
 		
 		if(showingCompatWarning) {
 			
-			drawNotice(I18n.format("voice.unsupportedWarning1"), false, I18n.format("voice.unsupportedWarning2"), I18n.format("voice.unsupportedWarning3"),
-					"", I18n.format("voice.unsupportedWarning4"), I18n.format("voice.unsupportedWarning5"), I18n.format("voice.unsupportedWarning6"),
-					I18n.format("voice.unsupportedWarning7"), "", I18n.format("voice.unsupportedWarning8"), I18n.format("voice.unsupportedWarning9"));
+			drawNotice(I18n.get("voice.unsupportedWarning1"), false, I18n.get("voice.unsupportedWarning2"), I18n.get("voice.unsupportedWarning3"),
+					"", I18n.get("voice.unsupportedWarning4"), I18n.get("voice.unsupportedWarning5"), I18n.get("voice.unsupportedWarning6"),
+					I18n.get("voice.unsupportedWarning7"), "", I18n.get("voice.unsupportedWarning8"), I18n.get("voice.unsupportedWarning9"));
 			
 			noticeContinueButton.visible = true;
 			noticeCancelButton.visible = false;
 		}else if(showingTrackingWarning) {
 			
-			drawNotice(I18n.format("voice.ipGrabWarning1"), true, I18n.format("voice.ipGrabWarning2"), I18n.format("voice.ipGrabWarning3"),
-					I18n.format("voice.ipGrabWarning4"), "", I18n.format("voice.ipGrabWarning5"), I18n.format("voice.ipGrabWarning6"),
-					I18n.format("voice.ipGrabWarning7"));
+			drawNotice(I18n.get("voice.ipGrabWarning1"), true, I18n.get("voice.ipGrabWarning2"), I18n.get("voice.ipGrabWarning3"),
+					I18n.get("voice.ipGrabWarning4"), "", I18n.get("voice.ipGrabWarning5"), I18n.get("voice.ipGrabWarning6"),
+					I18n.get("voice.ipGrabWarning7"));
 			
 			noticeContinueButton.visible = true;
 			noticeCancelButton.visible = true;
@@ -526,7 +526,7 @@ public class GuiVoiceMenu extends Gui {
 		drawRect(x - margin, y - margin, x + widthAccum + margin,
 				y + lines.length * 10 + 48 + margin, 0xFF111111);
 		
-		drawCenteredString(fontRendererObj, EnumChatFormatting.BOLD + title, width / 2, y, 0xFF7766);
+		drawCenteredString(fontRendererObj, ChatFormatting.BOLD + title, width / 2, y, 0xFF7766);
 		
 		for(int i = 0; i < lines.length; ++i) {
 			drawString(fontRendererObj, lines[i], x, y + i * 10 + 18, 0xDDAAAA);
@@ -612,7 +612,7 @@ public class GuiVoiceMenu extends Gui {
 				if(par2 == 1) {
 					showPTTKeyConfig = false;
 				}else {
-					mc.gameSettings.voicePTTKey = par2;
+					mc.options.voicePTTKey = par2;
 					showNewPTTKey = 10;
 				}
 			}
@@ -649,7 +649,7 @@ public class GuiVoiceMenu extends Gui {
 				if(mx >= voiceScreenButtonOFFposX && my >= voiceScreenButtonOFFposY && mx < voiceScreenButtonOFFposX +
 						voiceScreenButtonOFFposW && my < voiceScreenButtonOFFposY + voiceScreenButtonOFFposH) {
 					VoiceClientController.setVoiceChannel(EnumVoiceChannelType.NONE);
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 				}else if(mx >= voiceScreenButtonRADIUSposX && my >= voiceScreenButtonRADIUSposY && mx < voiceScreenButtonRADIUSposX +
 						voiceScreenButtonRADIUSposW && my < voiceScreenButtonRADIUSposY + voiceScreenButtonRADIUSposH) {
 					
@@ -663,7 +663,7 @@ public class GuiVoiceMenu extends Gui {
 						VoiceClientController.setVoiceChannel(EnumVoiceChannelType.PROXIMITY);
 					}
 					
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 					
 				}else if(mx >= voiceScreenButtonGLOBALposX && my >= voiceScreenButtonGLOBALposY && mx < voiceScreenButtonGLOBALposX +
 						voiceScreenButtonGLOBALposW && my < voiceScreenButtonGLOBALposY + voiceScreenButtonGLOBALposH) {
@@ -678,27 +678,27 @@ public class GuiVoiceMenu extends Gui {
 						VoiceClientController.setVoiceChannel(EnumVoiceChannelType.GLOBAL);
 					}
 					
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 					
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 				}else if(channel == EnumVoiceChannelType.PROXIMITY && status == EnumVoiceChannelStatus.CONNECTED && mx >= voiceScreenButtonChangeRadiusposX &&
 						my >= voiceScreenButtonChangeRadiusposY && mx < voiceScreenButtonChangeRadiusposX + voiceScreenButtonChangeRadiusposW &&
 						my < voiceScreenButtonChangeRadiusposY + voiceScreenButtonChangeRadiusposH) {
 					showSliderBlocks = true;
 					sliderBlocks.sliderValue = (VoiceClientController.getVoiceProximity() - 5) / 17.0f;
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 				}else if(status == EnumVoiceChannelStatus.CONNECTED && channel != EnumVoiceChannelType.NONE && mx >= voiceScreenVolumeIndicatorX &&
 						my >= voiceScreenVolumeIndicatorY && mx < voiceScreenVolumeIndicatorX + voiceScreenVolumeIndicatorW &&
 						my < voiceScreenVolumeIndicatorY + voiceScreenVolumeIndicatorH) {
 					showSliderVolume = true;
 					sliderListenVolume.sliderValue = VoiceClientController.getVoiceListenVolume();
 					sliderSpeakVolume.sliderValue = VoiceClientController.getVoiceSpeakVolume();
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 				}else if(status == EnumVoiceChannelStatus.CONNECTED && channel != EnumVoiceChannelType.NONE && mx >= voiceScreenVolumeIndicatorX - 1 &&
 						my >= voiceScreenVolumeIndicatorY + voiceScreenVolumeIndicatorH + 2 && mx < voiceScreenVolumeIndicatorX + voiceScreenVolumeIndicatorW + 2 &&
 						my < voiceScreenVolumeIndicatorY + voiceScreenVolumeIndicatorH + 12) {
 					showPTTKeyConfig = true;
-					this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+					this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 				}else if(status == EnumVoiceChannelStatus.CONNECTED) {
 					List<EaglercraftUUID> playersToRender = VoiceClientController.getVoiceRecent();
 					if(playersToRender.size() > 0) {
@@ -710,7 +710,7 @@ public class GuiVoiceMenu extends Gui {
 							int mhy = voiceScreenVolumeIndicatorY + voiceScreenVolumeIndicatorH + 33 + i * 9;
 							if(mx >= voiceScreenVolumeIndicatorX - 3 && my >= mhy && mx < voiceScreenVolumeIndicatorX + voiceScreenVolumeIndicatorW + 2 && my < mhy + 9) {
 								VoiceClientController.setVoiceMuted(uuid, !muted);
-								this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+								this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 								break;
 							}
 						}
@@ -721,19 +721,19 @@ public class GuiVoiceMenu extends Gui {
 		
 	}
 	
-	private void actionPerformed(GuiButton btn) {
+	private void actionPerformed(net.minecraft.client.gui.components.Button btn) {
 		if(btn.id == 2) {
 			showSliderBlocks = false;
-			VoiceClientController.setVoiceProximity(mc.gameSettings.voiceListenRadius = (int)((sliderBlocks.sliderValue * 17.0f) + 5.0f));
-			mc.gameSettings.saveOptions();
+			VoiceClientController.setVoiceProximity(mc.options.voiceListenRadius = (int)((sliderBlocks.sliderValue * 17.0f) + 5.0f));
+			mc.options.saveOptions();
 		}else if(btn.id == 3) {
 			showSliderVolume = false;
-			VoiceClientController.setVoiceListenVolume(mc.gameSettings.voiceListenVolume = sliderListenVolume.sliderValue);
-			VoiceClientController.setVoiceSpeakVolume(mc.gameSettings.voiceSpeakVolume = sliderSpeakVolume.sliderValue);
-			mc.gameSettings.saveOptions();
+			VoiceClientController.setVoiceListenVolume(mc.options.voiceListenVolume = sliderListenVolume.sliderValue);
+			VoiceClientController.setVoiceSpeakVolume(mc.options.voiceSpeakVolume = sliderSpeakVolume.sliderValue);
+			mc.options.saveOptions();
 		}else if(btn.id == 4) {
 			showPTTKeyConfig = false;
-			mc.gameSettings.saveOptions();
+			mc.options.saveOptions();
 		}else if(btn.id == 5) {
 			if(showingCompatWarning) {
 				showingCompatWarning = false;
@@ -761,7 +761,7 @@ public class GuiVoiceMenu extends Gui {
 			--showNewPTTKey;
 			if(showNewPTTKey == 0) {
 				showPTTKeyConfig = false;
-				mc.gameSettings.saveOptions();
+				mc.options.saveOptions();
 			}
 		}
 	}

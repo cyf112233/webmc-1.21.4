@@ -44,12 +44,12 @@ import net.lax1dude.eaglercraft.v1_8.profile.EaglerProfile;
 import net.lax1dude.eaglercraft.v1_8.profile.GuiAuthenticationScreen;
 import net.lax1dude.eaglercraft.v1_8.update.UpdateService;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiDisconnected;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.multiplayer.GuiConnecting;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.client.gui.screens.Screen;
+// ConnectingScreen has been replaced with more generic Screen in 1.21.4
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 public class ConnectionHandshake {
 
@@ -79,8 +79,8 @@ public class ConnectionHandshake {
 		}
 	}
 	
-	public static boolean attemptHandshake(Minecraft mc, IWebSocketClient client, GuiConnecting connecting,
-			GuiScreen ret, String password, boolean allowPlaintext, boolean enableCookies, byte[] cookieData) {
+	public static boolean attemptHandshake(Minecraft mc, IWebSocketClient client, Screen connecting,
+			Screen ret, String password, boolean allowPlaintext, boolean enableCookies, byte[] cookieData) {
 		try {
 			EaglerProfile.clearServerSkinOverride();
 			PauseMenuCustomizeState.reset();
@@ -154,7 +154,7 @@ public class ConnectionHandshake {
 				di.read(dat);
 				String msg = new String(dat, StandardCharsets.UTF_8);
 				
-				mc.displayGuiScreen(new GuiDisconnected(ret, "connect.failed", new ChatComponentText(msg)));
+				mc.displayScreen(new DisconnectedScreen(ret, "connect.failed", new Component(msg)));
 				
 				return false;
 			}else if(type == HandshakePacketTypes.PROTOCOL_SERVER_VERSION) {
@@ -162,14 +162,14 @@ public class ConnectionHandshake {
 				
 				if(protocolVersion != protocolV2 && protocolVersion != protocolV3 && protocolVersion != protocolV4) {
 					logger.info("Incompatible server version: {}", protocolVersion);
-					mc.displayGuiScreen(new GuiDisconnected(ret, "connect.failed", new ChatComponentText(protocolVersion < protocolV2 ? "Outdated Server" : "Outdated Client")));
+					mc.displayScreen(new DisconnectedScreen(ret, "connect.failed", new Component(protocolVersion < protocolV2 ? "Outdated Server" : "Outdated Client")));
 					return false;
 				}
 				
 				int gameVers = di.readShort();
 				if(gameVers != 47) {
 					logger.info("Incompatible minecraft protocol version: {}", gameVers);
-					mc.displayGuiScreen(new GuiDisconnected(ret, "connect.failed", new ChatComponentText("This server does not support 1.8!")));
+					mc.displayScreen(new DisconnectedScreen(ret, "connect.failed", new Component("This server does not support 1.8!")));
 					return false;
 				}
 				
@@ -212,8 +212,8 @@ public class ConnectionHandshake {
 							d.writeChars(password);
 						}else {
 							logger.error("Plaintext authentication was attempted but no user confirmation has been given to proceed");
-							mc.displayGuiScreen(new GuiDisconnected(ret, "connect.failed",
-									new ChatComponentText(EnumChatFormatting.RED + "Plaintext authentication was attempted but no user confirmation has been given to proceed")));
+							mc.displayScreen(new DisconnectedScreen(ret, "connect.failed",
+									new Component(ChatFormatting.RED + "Plaintext authentication was attempted but no user confirmation has been given to proceed")));
 							return false;
 						}
 					}else if(authType == HandshakePacketTypes.AUTH_METHOD_EAGLER_SHA256) {
@@ -283,8 +283,8 @@ public class ConnectionHandshake {
 						d.write(toHexAndSalt);
 					}else {
 						logger.error("Unsupported authentication type: {}", authType);
-						mc.displayGuiScreen(new GuiDisconnected(ret, "connect.failed",
-								new ChatComponentText(EnumChatFormatting.RED + "Unsupported authentication type: " + authType + "\n\n" + EnumChatFormatting.GRAY + "(Use a newer version of the client)")));
+						mc.displayScreen(new DisconnectedScreen(ret, "connect.failed",
+								new Component(ChatFormatting.RED + "Unsupported authentication type: " + authType + "\n\n" + ChatFormatting.GRAY + "(Use a newer version of the client)")));
 						return false;
 					}
 				}else {
@@ -416,7 +416,7 @@ public class ConnectionHandshake {
 					dat = new byte[msgLen];
 					di.read(dat);
 					String errStr = new String(dat, StandardCharsets.UTF_8);
-					mc.displayGuiScreen(new GuiDisconnected(ret, "connect.failed", IChatComponent.Serializer.jsonToComponent(errStr)));
+					mc.displayScreen(new DisconnectedScreen(ret, "connect.failed", Component.Serializer.jsonToComponent(errStr)));
 					return false;
 				}else if(type == HandshakePacketTypes.PROTOCOL_SERVER_ERROR) {
 					showError(mc, client, connecting, ret, di, protocolVersion == protocolV2);
@@ -454,7 +454,7 @@ public class ConnectionHandshake {
 		return b.getByteArray();
 	}
 	
-	private static void showError(Minecraft mc, IWebSocketClient client, GuiConnecting connecting, GuiScreen scr, DataInputStream err, boolean v2) throws IOException {
+	private static void showError(Minecraft mc, IWebSocketClient client, Screen connecting, Screen scr, DataInputStream err, boolean v2) throws IOException {
 		int errorCode = err.read();
 		int msgLen = v2 ? err.read() : err.readUnsignedShort();
 		
@@ -477,20 +477,20 @@ public class ConnectionHandshake {
 		logger.info("Server Error Code {}: {}", errorCode, errStr);
 		if(errorCode == HandshakePacketTypes.SERVER_ERROR_RATELIMIT_BLOCKED) {
 			RateLimitTracker.registerBlock(client.getCurrentURI());
-			mc.displayGuiScreen(GuiDisconnected.createRateLimitKick(scr));
+			mc.displayScreen(DisconnectedScreen.createRateLimitKick(scr));
 		}else if(errorCode == HandshakePacketTypes.SERVER_ERROR_RATELIMIT_LOCKED) {
 			RateLimitTracker.registerLockOut(client.getCurrentURI());
-			mc.displayGuiScreen(GuiDisconnected.createRateLimitKick(scr));
+			mc.displayScreen(DisconnectedScreen.createRateLimitKick(scr));
 		}else if(errorCode == HandshakePacketTypes.SERVER_ERROR_CUSTOM_MESSAGE) {
-			mc.displayGuiScreen(new GuiDisconnected(scr, "connect.failed", IChatComponent.Serializer.jsonToComponent(errStr)));
+			mc.displayScreen(new DisconnectedScreen(scr, "connect.failed", Component.Serializer.jsonToComponent(errStr)));
 		}else if(connecting != null && errorCode == HandshakePacketTypes.SERVER_ERROR_AUTHENTICATION_REQUIRED) {
-			mc.displayGuiScreen(new GuiAuthenticationScreen(connecting, scr, errStr));
+			mc.displayScreen(new GuiAuthenticationScreen(connecting, scr, errStr));
 		}else {
-			mc.displayGuiScreen(new GuiDisconnected(scr, "connect.failed", new ChatComponentText("Server Error Code " + errorCode + "\n" + errStr)));
+			mc.displayScreen(new DisconnectedScreen(scr, "connect.failed", new Component("Server Error Code " + errorCode + "\n" + errStr)));
 		}
 	}
 	
-	public static GuiScreen displayAuthProtocolConfirm(int protocol, GuiScreen no, GuiScreen yes) {
+	public static Screen displayAuthProtocolConfirm(int protocol, Screen no, Screen yes) {
 		if(protocol == HandshakePacketTypes.AUTH_METHOD_PLAINTEXT) {
 			return new GuiHandshakeApprove("plaintext", no, yes);
 		}else if(protocol != HandshakePacketTypes.AUTH_METHOD_EAGLER_SHA256 && protocol != HandshakePacketTypes.AUTH_METHOD_AUTHME_SHA256) {

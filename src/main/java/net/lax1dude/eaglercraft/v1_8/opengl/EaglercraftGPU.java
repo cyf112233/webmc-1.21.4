@@ -21,7 +21,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.buffer.FloatBuffer;
 import net.lax1dude.eaglercraft.v1_8.internal.buffer.IntBuffer;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.util.MathHelper;
+import net.minecraft.util.Mth;
 
 import com.carrotsearch.hppc.IntObjectHashMap;
 import com.carrotsearch.hppc.IntObjectMap;
@@ -358,7 +358,7 @@ public class EaglercraftGPU {
 
 	public static void glTexStorage2D(int target, int levels, int internalFormat, int w, int h) {
 		GlStateManager.setTextureCachedSize(target, w, h);
-		if(texStorageCapable && (glesVers >= 300 || levels == 1 || (MathHelper.calculateLogBaseTwo(Math.max(w, h)) + 1) == levels)) {
+		if(texStorageCapable && (glesVers >= 300 || levels == 1 || (Mth.calculateLogBaseTwo(Math.max(w, h)) + 1) == levels)) {
 			_wglTexStorage2D(target, levels, internalFormat, w, h);
 		}else {
 			int tv = TextureFormatHelper.trivializeInternalFormatToGLES20(internalFormat);
@@ -1038,7 +1038,7 @@ public class EaglercraftGPU {
 		GLSLHeader.init();
 		DrawUtils.init();
 		if(instancingCapable) {
-			InstancedFontRenderer.initialize();
+			InstancedFont.initialize();
 			InstancedParticleRenderer.initialize();
 		}
 		EffectPipelineFXAA.initialize();
@@ -1050,7 +1050,7 @@ public class EaglercraftGPU {
 	public static void destroyCache() {
 		GLSLHeader.destroy();
 		DrawUtils.destroy();
-		InstancedFontRenderer.destroy();
+		InstancedFont.destroy();
 		InstancedParticleRenderer.destroy();
 		EffectPipelineFXAA.destroy();
 		TextureCopyUtil.destroy();

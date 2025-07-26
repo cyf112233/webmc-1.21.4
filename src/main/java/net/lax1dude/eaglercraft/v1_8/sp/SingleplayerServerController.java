@@ -42,16 +42,32 @@ import net.lax1dude.eaglercraft.v1_8.sp.ipc.*;
 import net.lax1dude.eaglercraft.v1_8.sp.lan.LANServerController;
 import net.lax1dude.eaglercraft.v1_8.sp.socket.ClientIntegratedServerNetworkManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.IProgressUpdate;
-import net.minecraft.util.StringTranslate;
-import net.minecraft.world.WorldSettings;
-import net.minecraft.world.storage.ISaveFormat;
-import net.minecraft.world.storage.ISaveHandler;
-import net.minecraft.world.storage.SaveFormatComparator;
-import net.minecraft.world.storage.WorldInfo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.server.packs.repository.ServerPacksSource;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.dimension.LevelStem;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess;
+import net.minecraft.world.level.storage.LevelSummary;
+import net.minecraft.world.level.storage.ServerLevelData;
+import net.minecraft.world.level.levelgen.WorldGenSettings;
+import net.minecraft.world.level.storage.PrimaryLevelData;
+import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.server.packs.repository.RepositorySource;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.ticks.LevelTicks;
 
-public class SingleplayerServerController implements ISaveFormat {
+public class SingleplayerServerController {
 
 	public static final String IPC_CHANNEL = "~!IPC";
 	public static final String PLAYER_CHANNEL = "~!LOCAL_PLAYER";
@@ -65,9 +81,9 @@ public class SingleplayerServerController implements ISaveFormat {
 
 	public static final SingleplayerServerController instance = new SingleplayerServerController();
 	public static final Logger logger = LogManager.getLogger("SingleplayerServerController");
-	public static final List<SaveFormatComparator> saveListCache = new ArrayList<>();
-	public static final Map<String, WorldInfo> saveListMap = new HashMap<>();
-	public static final List<NBTTagCompound> saveListNBT = new ArrayList<>();
+	public static final List<LevelSummary> saveListCache = new ArrayList<>();
+	public static final Map<String, ServerLevelData> saveListMap = new HashMap<>();
+	public static final List<CompoundTag> saveListNBT = new ArrayList<>();
 
 	private static boolean isPaused = false;
 	private static List<String> integratedServerTPS = new ArrayList<>();
@@ -130,17 +146,17 @@ public class SingleplayerServerController implements ISaveFormat {
 		return statusState == IntegratedServerState.WORLD_NONE;
 	}
 
-	public static boolean isWorldNotLoaded() {
+	public static boolean isLevelNotLoaded() {
 		return statusState == IntegratedServerState.WORLD_NONE || statusState == IntegratedServerState.WORLD_WORKER_NOT_RUNNING ||
 				statusState == IntegratedServerState.WORLD_WORKER_BOOTING;
 	}
 	
-	public static boolean isWorldRunning() {
+	public static boolean isLevelRunning() {
 		return statusState == IntegratedServerState.WORLD_LOADED || statusState == IntegratedServerState.WORLD_PAUSED ||
 				statusState == IntegratedServerState.WORLD_LOADING || statusState == IntegratedServerState.WORLD_SAVING;
 	}
 	
-	public static boolean isWorldReady() {
+	public static boolean isLevelReady() {
 		return statusState == IntegratedServerState.WORLD_LOADED || statusState == IntegratedServerState.WORLD_PAUSED ||
 				statusState == IntegratedServerState.WORLD_SAVING;
 	}
@@ -194,19 +210,19 @@ public class SingleplayerServerController implements ISaveFormat {
 		}
 	}
 	
-	private static void ensureWorldReady() {
-		if(!isWorldReady()) {
+	private static void ensureLevelReady() {
+		if(!isLevelReady()) {
 			String msg = "Server is in state " + statusState + " '" + IntegratedServerState.getStateName(statusState) + "' which is not the 'WORLD_LOADED' state for the requested IPC operation";
 			throw new IllegalStateException(msg);
 		}
 	}
 
-	public static void launchEaglercraftServer(String folderName, int difficulty, int viewDistance, WorldSettings settings) {
+	public static void launchEaglercraftServer(String folderName, int difficulty, int viewDistance, net.minecraft.world.level.LevelSettings settings) {
 		ensureReady();
 		clearTPS();
 		if(settings != null) {
-			sendIPCPacket(new IPCPacket02InitWorld(folderName, settings.getGameType().getID(),
-					settings.getTerrainType().getWorldTypeID(), settings.getWorldName(), settings.getSeed(),
+			sendIPCPacket(new IPCPacket02InitLevel(folderName, settings.getGameType().getID(),
+					settings.getTerrainType().getLevelTypeID(), settings.getLevelName(), settings.getSeed(),
 					settings.areCommandsAllowed(), settings.isMapFeaturesEnabled(), settings.isBonusChestEnabled(),
 					settings.getHardcoreEnabled()));
 		}
@@ -230,7 +246,7 @@ public class SingleplayerServerController implements ISaveFormat {
 
 	public static boolean hangupEaglercraftServer() {
 		LANServerController.closeLAN();
-		if(isWorldRunning()) {
+		if(isLevelRunning()) {
 			logger.error("Shutting down integrated server due to unexpected client hangup, this is a memleak");
 			statusState = IntegratedServerState.WORLD_UNLOADING;
 			sendIPCPacket(new IPCPacket01StopServer());
@@ -242,7 +258,7 @@ public class SingleplayerServerController implements ISaveFormat {
 
 	public static boolean shutdownEaglercraftServer() {
 		LANServerController.closeLAN();
-		if(isWorldRunning()) {
+		if(isLevelRunning()) {
 			logger.info("Shutting down integrated server");
 			statusState = IntegratedServerState.WORLD_UNLOADING;
 			sendIPCPacket(new IPCPacket01StopServer());
@@ -320,7 +336,7 @@ public class SingleplayerServerController implements ISaveFormat {
 			switch(pkt.ack) {
 				case 0xFF:
 					logger.info("Integrated server signaled a successful boot");
-					sendIPCPacket(new IPCPacket14StringList(IPCPacket14StringList.LOCALE, StringTranslate.dump()));
+					sendIPCPacket(new IPCPacket14StringList(IPCPacket14StringList.LOCALE, Language.dump()));
 					statusState = IntegratedServerState.WORLD_NONE;
 					break;
 				case IPCPacket00StartServer.ID:
@@ -343,11 +359,11 @@ public class SingleplayerServerController implements ISaveFormat {
 					localPlayerNetworkManager.isPlayerChannelOpen = false;
 					statusState = IntegratedServerState.WORLD_NONE;
 					break;
-				case IPCPacket06RenameWorldNBT.ID:
+				case IPCPacket06RenameLevelNBT.ID:
 					statusState = IntegratedServerState.WORLD_NONE;
 					break;
-				case IPCPacket03DeleteWorld.ID:
-				case IPCPacket07ImportWorld.ID:
+				case IPCPacket03DeleteLevel.ID:
+				case IPCPacket07ImportLevel.ID:
 				case IPCPacket12FileWrite.ID:
 				case IPCPacket13FileCopyMove.ID:
 				case IPCPacket18ClearPlayers.ID:
@@ -462,13 +478,13 @@ public class SingleplayerServerController implements ISaveFormat {
 		return c;
 	}
 
-	public static void importWorld(String name, byte[] data, int format, byte gameRules) {
+	public static void importLevel(String name, byte[] data, int format, byte gameRules) {
 		ensureReady();
 		statusState = IntegratedServerState.WORLD_IMPORTING;
-		sendIPCPacket(new IPCPacket07ImportWorld(name, data, (byte)format, gameRules));
+		sendIPCPacket(new IPCPacket07ImportLevel(name, data, (byte)format, gameRules));
 	}
 	
-	public static void exportWorld(String name, int format) {
+	public static void exportLevel(String name, int format) {
 		ensureReady();
 		statusState = IntegratedServerState.WORLD_EXPORTING;
 		if(format == IPCPacket05RequestData.REQUEST_LEVEL_EAG) {
@@ -517,18 +533,18 @@ public class SingleplayerServerController implements ISaveFormat {
 		saveListMap.clear();
 		saveListCache.clear();
 		for(int j = 0, l = saveListNBT.size(); j < l; ++j) {
-			NBTTagCompound nbt = saveListNBT.get(j);
+			CompoundTag nbt = saveListNBT.get(j);
 			String folderName = nbt.getString("folderNameEagler");
 			if(!StringUtils.isEmpty(folderName)) {
-				WorldInfo worldinfo = new WorldInfo(nbt.getCompoundTag("Data"));
+				ServerLevelData worldinfo = new ServerLevelData(nbt.getCompoundTag("Data"));
 				saveListMap.put(folderName, worldinfo);
-				String s1 = worldinfo.getWorldName();
+				String s1 = worldinfo.getLevelName();
 				if (StringUtils.isEmpty(s1)) {
 					s1 = folderName;
 				}
 
 				long i = 0L;
-				saveListCache.add(new SaveFormatComparator(folderName, s1, worldinfo.getLastTimePlayed(), i,
+				saveListCache.add(new LevelSummary(folderName, s1, worldinfo.getLastTimePlayed(), i,
 						worldinfo.getGameType(), false, worldinfo.isHardcoreModeEnabled(),
 						worldinfo.areCommandsAllowed(), nbt));
 			}
@@ -541,23 +557,23 @@ public class SingleplayerServerController implements ISaveFormat {
 	}
 
 	@Override
-	public ISaveHandler getSaveLoader(String var1, boolean var2) {
+	public net.minecraft.server.packs.repository.Pack getSaveLoader(String var1, boolean var2) {
 		return new SingleplayerSaveHandler(saveListMap.get(var1));
 	}
 
 	@Override
-	public List<SaveFormatComparator> getSaveList() {
+	public List<LevelSummary> getSaveList() {
 		return saveListCache;
 	}
 
 	@Override
 	public void flushCache() {
-		sendIPCPacket(new IPCPacket0EListWorlds());
+		sendIPCPacket(new IPCPacket0EListLevels());
 		statusState = IntegratedServerState.WORLD_LISTING;
 	}
 
 	@Override
-	public WorldInfo getWorldInfo(String var1) {
+	public ServerLevelData getLevelData(String var1) {
 		return saveListMap.get(var1);
 	}
 
@@ -567,21 +583,21 @@ public class SingleplayerServerController implements ISaveFormat {
 	}
 
 	@Override
-	public boolean deleteWorldDirectory(String var1) {
-		sendIPCPacket(new IPCPacket03DeleteWorld(var1));
+	public boolean deleteLevelDirectory(String var1) {
+		sendIPCPacket(new IPCPacket03DeleteLevel(var1));
 		statusState = IntegratedServerState.WORLD_DELETING;
 		return false;
 	}
 
 	@Override
-	public boolean renameWorld(String var1, String var2) {
-		sendIPCPacket(new IPCPacket06RenameWorldNBT(var1, var2, false));
+	public boolean renameLevel(String var1, String var2) {
+		sendIPCPacket(new IPCPacket06RenameLevelNBT(var1, var2, false));
 		statusState = IntegratedServerState.WORLD_RENAMING;
 		return true;
 	}
 
-	public static void duplicateWorld(String var1, String var2) {
-		sendIPCPacket(new IPCPacket06RenameWorldNBT(var1, var2, true));
+	public static void duplicateLevel(String var1, String var2) {
+		sendIPCPacket(new IPCPacket06RenameLevelNBT(var1, var2, true));
 		statusState = IntegratedServerState.WORLD_DUPLICATING;
 	}
 
@@ -595,13 +611,16 @@ public class SingleplayerServerController implements ISaveFormat {
 		return false;
 	}
 
-	@Override
-	public boolean convertMapFormat(String var1, IProgressUpdate var2) {
+	public boolean convertMapFormat(String var1, Object var2) {
 		return false;
 	}
 
+	public void loadPacks(java.util.function.Consumer<Object> consumer, Object packConstructor) {
+		// No-op implementation for Eaglercraft
+	}
+
 	@Override
-	public boolean canLoadWorld(String var1) {
+	public boolean canLoadLevel(String var1) {
 		return saveListMap.containsKey(var1);
 	}
 
@@ -622,17 +641,17 @@ public class SingleplayerServerController implements ISaveFormat {
 	}
 
 	public static void setDifficulty(int difficultyId) {
-		if(isWorldRunning()) {
-			sendIPCPacket(new IPCPacket0ASetWorldDifficulty((byte)difficultyId));
+		if(isLevelRunning()) {
+			sendIPCPacket(new IPCPacket0ASetLevelDifficulty((byte)difficultyId));
 		}
 	}
 
-	public static void configureLAN(net.minecraft.world.WorldSettings.GameType enumGameType, boolean allowCommands) {
-		sendIPCPacket(new IPCPacket17ConfigureLAN(enumGameType.getID(), allowCommands, LANServerController.currentICEServers));
+	public static void configureLAN(net.minecraft.world.level.GameType enumGameType, boolean allowCommands) {
+		sendIPCPacket(new IPCPacket17ConfigureLAN(enumGameType.getId(), allowCommands, LANServerController.currentICEServers));
 	}
 
 	public static boolean isClientInEaglerSingleplayerOrLAN() {
-		Minecraft mc = Minecraft.getMinecraft();
-		return mc != null && mc.thePlayer != null && mc.thePlayer.sendQueue.isClientInEaglerSingleplayerOrLAN();
+		MinecraftClient mc = MinecraftClient.getInstance();
+		return mc != null && mc.player != null && mc.player.sendQueue.isClientInEaglerSingleplayerOrLAN();
 	}
 }

@@ -22,15 +22,15 @@ import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.*;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketOtherPlayerClientUUIDV4EAG;
 import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerMinecraftServer;
 import net.lax1dude.eaglercraft.v1_8.sp.server.voice.IntegratedVoiceService;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 public class ServerV4MessageHandler implements GameMessageHandler {
 
-	private final NetHandlerPlayServer netHandler;
+	private final ServerGamePacketListenerImpl netHandler;
 	private final EaglerMinecraftServer server;
 
-	public ServerV4MessageHandler(NetHandlerPlayServer netHandler) {
+	public ServerV4MessageHandler(ServerGamePacketListenerImpl netHandler) {
 		this.netHandler = netHandler;
 		this.server = (EaglerMinecraftServer)netHandler.serverController;
 	}
@@ -94,7 +94,7 @@ public class ServerV4MessageHandler implements GameMessageHandler {
 	}
 
 	public void handleClient(CPacketGetOtherClientUUIDV4EAG packet) {
-		EntityPlayerMP player = server.getConfigurationManager().getPlayerByUUID(new EaglercraftUUID(packet.playerUUIDMost, packet.playerUUIDLeast));
+		ServerPlayer player = server.getConfigurationManager().getPlayerByUUID(new EaglercraftUUID(packet.playerUUIDMost, packet.playerUUIDLeast));
 		if(player != null && player.clientBrandUUID != null) {
 			netHandler.sendEaglerMessage(new SPacketOtherPlayerClientUUIDV4EAG(packet.requestId, player.clientBrandUUID.msb, player.clientBrandUUID.lsb));
 		}else {

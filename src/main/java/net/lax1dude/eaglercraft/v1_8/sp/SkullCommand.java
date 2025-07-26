@@ -21,7 +21,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.CPacketInstallSkinSPEAG;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.network.chat.Component;
 
 public class SkullCommand {
 
@@ -29,7 +29,7 @@ public class SkullCommand {
 	private boolean waitingForSelection = false;
 
 	public SkullCommand(Minecraft mc) {
-		this.mc = mc;
+		this.minecraft = mc;
 	}
 
 	public void openFileChooser() {
@@ -41,16 +41,16 @@ public class SkullCommand {
 		if(waitingForSelection && EagRuntime.fileChooserHasResult()) {
 			waitingForSelection = false;
 			FileChooserResult fr = EagRuntime.getFileChooserResult();
-			if(fr == null || mc.thePlayer == null || mc.thePlayer.sendQueue == null) {
+			if(fr == null || mc.player == null || mc.player.sendQueue == null) {
 				return;
 			}
 			ImageData loaded = ImageData.loadImageFile(fr.fileData, ImageData.getMimeFromType(fr.fileName));
 			if(loaded == null) {
-				mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentTranslation("command.skull.error.invalid.format"));
+				mc.ingameGUI.getChatGUI().printChatMessage(new Component("command.skull.error.invalid.format"));
 				return;
 			}
 			if(loaded.width != 64 || loaded.height > 64) {
-				mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentTranslation("command.skull.error.invalid.skin", loaded.width, loaded.height));
+				mc.ingameGUI.getChatGUI().printChatMessage(new Component("command.skull.error.invalid.skin", loaded.width, loaded.height));
 				return;
 			}
 			byte[] rawSkin = new byte[loaded.pixels.length << 2];
@@ -62,7 +62,7 @@ public class SkullCommand {
 				rawSkin[j + 2] = (byte)(k >>> 8);
 				rawSkin[j + 3] = (byte)(k & 0xFF);
 			}
-			mc.thePlayer.sendQueue.sendEaglerMessage(new CPacketInstallSkinSPEAG(rawSkin));
+			mc.player.sendQueue.sendEaglerMessage(new CPacketInstallSkinSPEAG(rawSkin));
 		}
 	}
 

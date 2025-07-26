@@ -20,30 +20,30 @@ import java.io.IOException;
 
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 
-public class GuiUpdateVersionList extends GuiScreen {
+public class GuiUpdateVersionList extends Screen {
 
-	final GuiScreen back;
+	final Screen back;
 	GuiUpdateVersionSlot slots;
 	int selected;
-	GuiButton downloadButton;
+	net.minecraft.client.gui.components.Button downloadButton;
 	int mx = 0;
 	int my = 0;
 	String tooltip = null;
 
-	public GuiUpdateVersionList(GuiScreen back) {
+	public GuiUpdateVersionList(Screen back) {
 		this.back = back;
 	}
 
 	public void initGui() {
 		selected = -1;
 		buttonList.clear();
-		buttonList.add(new GuiButton(0, this.width / 2 + 54, this.height - 28, 100, 20, I18n.format("gui.done")));
-		buttonList.add(downloadButton = new GuiButton(1, this.width / 2 - 50, this.height - 28, 100, 20, I18n.format("updateList.download")));
-		buttonList.add(new GuiButton(2, this.width / 2 - 154, this.height - 28, 100, 20, I18n.format("updateList.refresh")));
+		buttonList.add(new net.minecraft.client.gui.components.Button(0, this.width / 2 + 54, this.height - 28, 100, 20, I18n.get("gui.done")));
+		buttonList.add(downloadButton = new net.minecraft.client.gui.components.Button(1, this.width / 2 - 50, this.height - 28, 100, 20, I18n.get("updateList.download")));
+		buttonList.add(new net.minecraft.client.gui.components.Button(2, this.width / 2 - 154, this.height - 28, 100, 20, I18n.get("updateList.refresh")));
 		slots = new GuiUpdateVersionSlot(this);
 		updateButtons();
 	}
@@ -53,17 +53,17 @@ public class GuiUpdateVersionList extends GuiScreen {
 	}
 
 	static Minecraft getMinecraft(GuiUpdateVersionList screen) {
-		return screen.mc;
+		return screen.minecraft;
 	}
 
-	public void actionPerformed(GuiButton btn) {
+	public void actionPerformed(net.minecraft.client.gui.components.Button btn) {
 		switch(btn.id) {
 		case 1:
 			if(selected != -1) {
 				UpdateService.startClientUpdateFrom(slots.certList.get(selected));
 			}
 		case 0:
-			mc.displayGuiScreen(back);
+			mc.displayScreen(back);
 			break;
 		case 2:
 			this.initGui();
@@ -77,12 +77,12 @@ public class GuiUpdateVersionList extends GuiScreen {
 		mx = par1;
 		my = par2;
 		slots.drawScreen(par1, par2, par3);
-		this.drawCenteredString(fontRendererObj, I18n.format("updateList.title"), this.width / 2, 16, 16777215);
-		this.drawCenteredString(fontRendererObj, I18n.format("updateList.note.0"), this.width / 2, this.height - 55, 0x888888);
-		this.drawCenteredString(fontRendererObj, I18n.format("updateList.note.1"), this.width / 2, this.height - 45, 0x888888);
+		this.drawCenteredString(fontRendererObj, I18n.get("updateList.title"), this.width / 2, 16, 16777215);
+		this.drawCenteredString(fontRendererObj, I18n.get("updateList.note.0"), this.width / 2, this.height - 55, 0x888888);
+		this.drawCenteredString(fontRendererObj, I18n.get("updateList.note.1"), this.width / 2, this.height - 45, 0x888888);
 		super.drawScreen(par1, par2, par3);
 		if(tooltip != null) {
-			drawHoveringText(mc.fontRendererObj.listFormattedStringToWidth(tooltip, 180), par1, par2);
+			drawHoveringText(mc.font.listFormattedStringToWidth(tooltip, 180), par1, par2);
 			GlStateManager.disableLighting();
 			tooltip = null;
 		}

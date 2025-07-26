@@ -17,8 +17,8 @@
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.texture;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.concurrent.Executor;
+import java.util.concurrent.CompletableFuture;
 import java.nio.charset.StandardCharsets;
 
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
@@ -28,15 +28,16 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.profiling.ProfilerFiller;
 
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
 
-public class MetalsLUT implements IResourceManagerReloadListener {
+public class MetalsLUT extends SimplePreparableReloadListener<Void> {
 
 	private static final Logger logger = LogManager.getLogger("MetalsLUT");
 
@@ -56,51 +57,49 @@ public class MetalsLUT implements IResourceManagerReloadListener {
 				lut[i + 6] = 1.0f;
 				lut[i + 7] = 0.0f;
 			}
-			try {
-				IResource metalsCsv = Minecraft.getMinecraft().getResourceManager()
-						.getResource(new ResourceLocation("eagler:glsl/deferred/metals.csv"));
-				try (BufferedReader reader = new BufferedReader(
-						new InputStreamReader(metalsCsv.getInputStream(), StandardCharsets.UTF_8))) {
-					String line;
-					int cnt = 0;
-					boolean firstLine = true;
-					while((line = reader.readLine()) != null) {
-						if((line = line.trim()).length() > 0) {
-							if(firstLine) {
-								firstLine = false;
-								continue;
-							}
-							String[] split = line.split(",");
-							if(split.length == 8) {
-								try {
-									int id = Integer.parseInt(split[1]);
-									float nr = Float.parseFloat(split[2]);
-									float ng = Float.parseFloat(split[3]);
-									float nb = Float.parseFloat(split[4]);
-									float kr = Float.parseFloat(split[5]);
-									float kg = Float.parseFloat(split[6]);
-									float kb = Float.parseFloat(split[7]);
-									if(id < 230 || id > 245) {
-										logger.error("Error, only metal IDs 230 to 245 are configurable!");
-									}else {
-										int i = (id - 230) << 3;
-										lut[i] = nr;
-										lut[i + 1] = ng;
-										lut[i + 2] = nb;
-										lut[i + 4] = kr;
-										lut[i + 5] = kg;
-										lut[i + 6] = kb;
-									}
-									++cnt;
-									continue;
-								}catch(NumberFormatException ex) {
-								}
-							}
-							logger.error("Skipping bad metal constant entry: {}", line);
+			try (Resource metalsCsv = Minecraft.getInstance().getResourceManager()
+					.getResource(new ResourceLocation("eagler:glsl/deferred/metals.csv"));
+				BufferedReader reader = new BufferedReader(
+					new InputStreamReader(metalsCsv.open(), StandardCharsets.UTF_8))) {
+				String line;
+				int cnt = 0;
+				boolean firstLine = true;
+				while((line = reader.readLine()) != null) {
+					if((line = line.trim()).length() > 0) {
+						if(firstLine) {
+							firstLine = false;
+							continue;
 						}
+						String[] split = line.split(",");
+						if(split.length == 8) {
+							try {
+								int id = Integer.parseInt(split[1]);
+								float nr = Float.parseFloat(split[2]);
+								float ng = Float.parseFloat(split[3]);
+								float nb = Float.parseFloat(split[4]);
+								float kr = Float.parseFloat(split[5]);
+								float kg = Float.parseFloat(split[6]);
+								float kb = Float.parseFloat(split[7]);
+								if(id < 230 || id > 245) {
+									logger.error("Error, only metal IDs 230 to 245 are configurable!");
+								}else {
+									int i = (id - 230) << 3;
+									lut[i] = nr;
+									lut[i + 1] = ng;
+									lut[i + 2] = nb;
+									lut[i + 4] = kr;
+									lut[i + 5] = kg;
+									lut[i + 6] = kb;
+								}
+								++cnt;
+								continue;
+							}catch(NumberFormatException ex) {
+							}
+						}
+						logger.error("Skipping bad metal constant entry: {}", line);
 					}
-					logger.info("Loaded {} metal definitions", cnt);
 				}
+				logger.info("Loaded {} metal definitions", cnt);
 			} catch (IOException e) {
 				logger.error("Failed to load PBR metal lookup table!");
 				logger.error(e);
@@ -136,11 +135,22 @@ public class MetalsLUT implements IResourceManagerReloadListener {
 	}
 
 	@Override
-	public void onResourceManagerReload(IResourceManager var1) {
+	protected Void prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
 		if(glTexture != -1) {
-			GlStateManager.deleteTexture(glTexture);
+			EaglercraftGPU.deleteTextures(new int[] { glTexture });
 			glTexture = -1;
 		}
+		return null;
+	}
+
+	@Override
+	protected void apply(Void prepared, ResourceManager resourceManager, ProfilerFiller profiler) {
+		// Texture will be recreated on next getGLTexture() call
+	}
+
+	// For backward compatibility
+	public void onResourceManagerReload(ResourceManager var1) {
+		this.prepare(var1, new net.minecraft.util.profiling.metrics.MetricsRecorder().getProfiler());
 	}
 
 	private static void setupFiltering() {

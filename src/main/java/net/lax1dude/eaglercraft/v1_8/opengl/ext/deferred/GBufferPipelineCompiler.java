@@ -32,7 +32,7 @@ import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program.ShaderSource;
 import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GLAllocation;
+import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 
 public class GBufferPipelineCompiler implements IExtPipelineCompiler {
 
@@ -54,7 +54,7 @@ public class GBufferPipelineCompiler implements IExtPipelineCompiler {
 	@Override
 	public String[] getShaderSource(int stateCoreBits, int stateExtBits, Object[] userPointer) {
 		if(matrixCopyBuffer == null) {
-			matrixCopyBuffer = GLAllocation.createDirectFloatBuffer(16);
+			matrixCopyBuffer = EaglercraftGPU.createFloatBuffer(16);
 		}
 		userPointer[0] = new GBufferPipelineProgramInstance(stateCoreBits, stateExtBits);
 		EaglerDeferredConfig conf = Minecraft.getMinecraft().gameSettings.deferredShaderConf;

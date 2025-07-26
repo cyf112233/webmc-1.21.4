@@ -28,9 +28,9 @@ import net.lax1dude.eaglercraft.v1_8.Keyboard;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiChat;
-import net.minecraft.client.gui.GuiIngameMenu;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.resources.ResourceLocation;
 
 public class GuiVoiceOverlay extends Gui {
 
@@ -41,7 +41,7 @@ public class GuiVoiceOverlay extends Gui {
 	private long pttTimer = 0l;
 	
 	public GuiVoiceOverlay(Minecraft mc) {
-		this.mc = mc;
+		this.minecraft = mc;
 	}
 	
 	public void setResolution(int w, int h) {
@@ -52,10 +52,10 @@ public class GuiVoiceOverlay extends Gui {
 	private static final ResourceLocation voiceGuiIcons = new ResourceLocation("eagler:gui/eagler_gui.png");
 
 	public void drawOverlay() {
-		if(mc.theWorld != null && VoiceClientController.getVoiceStatus() == EnumVoiceChannelStatus.CONNECTED && VoiceClientController.getVoiceChannel() != EnumVoiceChannelType.NONE &&
-				!(mc.currentScreen != null && (mc.currentScreen instanceof GuiIngameMenu))) {
+		if(mc.theLevel != null && VoiceClientController.getVoiceStatus() == EnumVoiceChannelStatus.CONNECTED && VoiceClientController.getVoiceChannel() != EnumVoiceChannelType.NONE &&
+				!(mc.screen != null && (mc.screen instanceof PauseScreen))) {
 			
-			if(mc.currentScreen != null && mc.currentScreen.doesGuiPauseGame()) {
+			if(mc.screen != null && mc.screen.doesGuiPauseGame()) {
 				return;
 			}
 			
@@ -65,9 +65,9 @@ public class GuiVoiceOverlay extends Gui {
 			GlStateManager.alphaFunc(GL_GREATER, 0.1F);
 			GlStateManager.pushMatrix();
 			
-			if(mc.currentScreen == null || (mc.currentScreen instanceof GuiChat)) {
+			if(mc.screen == null || (mc.screen instanceof ChatScreen)) {
 				GlStateManager.translate(width / 2 + 77, height - 56, 0.0f);
-				if(mc.thePlayer == null || mc.thePlayer.capabilities.isCreativeMode) {
+				if(mc.player == null || mc.player.capabilities.isCreativeMode) {
 					GlStateManager.translate(0.0f, 16.0f, 0.0f);
 				}
 			}else {
@@ -76,14 +76,14 @@ public class GuiVoiceOverlay extends Gui {
 
 			GlStateManager.scale(0.75f, 0.75f, 0.75f);
 			
-			String txxt = "press '" + Keyboard.getKeyName(mc.gameSettings.voicePTTKey) + "'";
-			drawString(mc.fontRendererObj, txxt, -3 - mc.fontRendererObj.getStringWidth(txxt), 9, 0xDDDDDD);
+			String txxt = "press '" + Keyboard.getKeyName(mc.options.voicePTTKey) + "'";
+			drawString(mc.font, txxt, -3 - mc.font.getStringWidth(txxt), 9, 0xDDDDDD);
 
 			GlStateManager.scale(0.66f, 0.66f, 0.66f);
 			
 			mc.getTextureManager().bindTexture(voiceGuiIcons);
 			
-			if((mc.currentScreen == null || !mc.currentScreen.blockPTTKey()) && Keyboard.isKeyDown(mc.gameSettings.voicePTTKey)) {
+			if((mc.screen == null || !mc.screen.blockPTTKey()) && Keyboard.isKeyDown(mc.options.voicePTTKey)) {
 				long millis = EagRuntime.steadyTimeMillis();
 				if(pttTimer == 0l) {
 					pttTimer = millis;
@@ -143,7 +143,7 @@ public class GuiVoiceOverlay extends Gui {
 					int ww = width;
 					int hh = height;
 					
-					if(mc.currentScreen != null && (mc.currentScreen instanceof GuiChat)) {
+					if(mc.screen != null && (mc.screen instanceof ChatScreen)) {
 						hh -= 15;
 					}
 					
@@ -153,7 +153,7 @@ public class GuiVoiceOverlay extends Gui {
 					for(int i = 0, l = listenerList.size(); i < l && i < 5; ++i) {
 						String txt = VoiceClientController.getVoiceUsername(listenerList.get(i));
 						listenerListStr.add(txt);
-						int j = mc.fontRendererObj.getStringWidth(txt) + 4;
+						int j = mc.font.getStringWidth(txt) + 4;
 						if(j > left) {
 							left = j;
 						}
@@ -163,7 +163,7 @@ public class GuiVoiceOverlay extends Gui {
 						GlStateManager.pushMatrix();
 						GlStateManager.translate(ww - left + 3, hh - 10, left);
 						GlStateManager.scale(0.75f, 0.75f, 0.75f);
-						drawString(mc.fontRendererObj, "(" + more + " more)", 0, 0, 0xBBBBBB);
+						drawString(mc.font, "(" + more + " more)", 0, 0, 0xBBBBBB);
 						GlStateManager.popMatrix();
 						hh -= 9;
 					}
@@ -172,7 +172,7 @@ public class GuiVoiceOverlay extends Gui {
 						boolean speaking = speakers.contains(listenerList.get(i));
 						float speakf = speaking ? 1.0f : 0.75f;
 						
-						drawString(mc.fontRendererObj, listenerListStr.get(i), ww - left, hh - 13 - i * 11, speaking ? 0xEEEEEE : 0xBBBBBB);
+						drawString(mc.font, listenerListStr.get(i), ww - left, hh - 13 - i * 11, speaking ? 0xEEEEEE : 0xBBBBBB);
 						
 						mc.getTextureManager().bindTexture(voiceGuiIcons);
 						
@@ -207,7 +207,7 @@ public class GuiVoiceOverlay extends Gui {
 				int ww = width;
 				int hh = height;
 				
-				if(mc.currentScreen != null && (mc.currentScreen instanceof GuiChat)) {
+				if(mc.screen != null && (mc.screen instanceof ChatScreen)) {
 					hh -= 15;
 				}
 				
@@ -217,7 +217,7 @@ public class GuiVoiceOverlay extends Gui {
 				for(int i = 0, l = listenerList.size(); i < l && i < 5; ++i) {
 					String txt = VoiceClientController.getVoiceUsername(listenerList.get(i));
 					listenerListStr.add(txt);
-					int j = mc.fontRendererObj.getStringWidth(txt) + 4;
+					int j = mc.font.getStringWidth(txt) + 4;
 					if(j > left) {
 						left = j;
 					}
@@ -227,13 +227,13 @@ public class GuiVoiceOverlay extends Gui {
 					GlStateManager.pushMatrix();
 					GlStateManager.translate(ww - left + 3, hh - 10, left);
 					GlStateManager.scale(0.75f, 0.75f, 0.75f);
-					drawString(mc.fontRendererObj, "(" + more + " more)", 0, 0, 0xBBBBBB);
+					drawString(mc.font, "(" + more + " more)", 0, 0, 0xBBBBBB);
 					GlStateManager.popMatrix();
 					hh -= 9;
 				}
 				
 				for(int i = 0, l = listenerList.size(); i < l && i < 5; ++i) {
-					drawString(mc.fontRendererObj, listenerListStr.get(i), ww - left, hh - 13 - i * 11, 0xEEEEEE);
+					drawString(mc.font, listenerListStr.get(i), ww - left, hh - 13 - i * 11, 0xEEEEEE);
 					
 					mc.getTextureManager().bindTexture(voiceGuiIcons);
 					

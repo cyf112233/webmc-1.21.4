@@ -37,8 +37,8 @@ import net.lax1dude.eaglercraft.v1_8.vector.Matrix3f;
 import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
 import net.lax1dude.eaglercraft.v1_8.vector.Vector3f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.util.MathHelper;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 
 public class CloudRenderWorker {
 
@@ -221,7 +221,7 @@ public class CloudRenderWorker {
 		float playerCoordsNoiseMapScale = 0.02f;
 		FloatBuffer matrixCopyBuffer = EaglerDeferredPipeline.matrixCopyBuffer;
 
-		WorldClient wc = Minecraft.getMinecraft().theWorld;
+		ClientLevel wc = Minecraft.getMinecraft().theLevel;
 		float rain = wc.getRainStrength(0.0f);
 		if(cloudRenderProgress == 0) {
 			shader_clouds_noise3d.useProgram();
@@ -270,11 +270,11 @@ public class CloudRenderWorker {
 			_wglUniform3f(shader_clouds_sample.uniforms.u_sunColor3f, cloudColorR, cloudColorG, cloudColorB);
 			
 			float cloudDensityTimer = (float)((EagRuntime.steadyTimeMillis() % 10000000l) * 0.001);
-			cloudDensityTimer += MathHelper.sin(cloudDensityTimer * 1.5f) * 1.5f;
+			cloudDensityTimer += Mth.sin(cloudDensityTimer * 1.5f) * 1.5f;
 			float x = cloudDensityTimer * 0.004f;
-			float f1 = MathHelper.sin(x + 0.322f) * 0.544f + MathHelper.sin(x * 4.5f + 1.843f) * 0.69f + MathHelper.sin(x * 3.4f + 0.8f) * 0.6f + MathHelper.sin(x * 6.1f + 1.72f) * 0.7f;
+			float f1 = Mth.sin(x + 0.322f) * 0.544f + Mth.sin(x * 4.5f + 1.843f) * 0.69f + Mth.sin(x * 3.4f + 0.8f) * 0.6f + Mth.sin(x * 6.1f + 1.72f) * 0.7f;
 			x = cloudDensityTimer * 0.002f;
-			float f2 = MathHelper.cos(x + 2.7f) + MathHelper.cos(x * 1.28f + 1.3f) * 0.4f + MathHelper.cos(x * 4.0f + 2.5f) * 0.3f + MathHelper.cos(x * 2.3f + 1.07f);
+			float f2 = Mth.cos(x + 2.7f) + Mth.cos(x * 1.28f + 1.3f) * 0.4f + Mth.cos(x * 4.0f + 2.5f) * 0.3f + Mth.cos(x * 2.3f + 1.07f);
 			float rain2 = rain + wc.getThunderStrength(0.0f);
 			_wglUniform4f(shader_clouds_sample.uniforms.u_densityModifier4f, 0.015f + f1 * 0.0021f * (1.0f - rain2 * 0.35f) + rain2 * 0.00023f, 0.0325f, -0.0172f + f2 * 0.00168f * (1.0f - rain2 * 0.35f) + rain * 0.0015f, 0.0f);
 		}
@@ -300,8 +300,8 @@ public class CloudRenderWorker {
 							shapeInit = true;
 							Matrix3f mat = tmpMatrix2;
 							mat.setIdentity();
-							mat.m00 = MathHelper.cos(shapeRotate * 0.0174532f);
-							mat.m01 = MathHelper.sin(shapeRotate * 0.0174532f);
+							mat.m00 = Mth.cos(shapeRotate * 0.0174532f);
+							mat.m01 = Mth.sin(shapeRotate * 0.0174532f);
 							mat.m10 = -mat.m01;
 							mat.m11 = mat.m00;
 							mat = tmpMatrix3;
@@ -554,7 +554,7 @@ public class CloudRenderWorker {
 					shapePosX = (int)(cloud3DSamplesTextureSizeX * (rand.nextFloat() * 1.5f - 0.75f));
 					shapePosY = (int)(cloud3DSamplesTextureSizeY * (rand.nextFloat() * 1.5f - 0.75f));
 				}while(shapePosX > -192 && shapePosY > -192 && shapePosX < 192 && shapePosY < 192);
-				float l = -MathHelper.sqrt_float(shapePosX * shapePosX + shapePosY * shapePosY);
+				float l = -Mth.sqrt_float(shapePosX * shapePosX + shapePosY * shapePosY);
 				shapeRotate = (float)Math.atan2(shapePosY / l, shapePosX / l) / 0.0174532f;
 				shapeRotate += (rand.nextFloat() - 0.5f) * 90.0f;
 				shapePosX += renderViewX * playerCoordsNoiseMapScale + cloud3DSamplesTextureSizeX * 0.5f;
@@ -562,12 +562,12 @@ public class CloudRenderWorker {
 				shapePosZ = (int)((cloud3DSamplesTextureSizeZ - shapeSizeZ) * (rand.nextFloat() * 0.5f + 0.25f));
 				isDrawingCloudShapes = true;
 			}else {
-				float dx = MathHelper.cos(-shapeRotate * 0.0174532f);
-				float dy = MathHelper.sin(-shapeRotate * 0.0174532f);
+				float dx = Mth.cos(-shapeRotate * 0.0174532f);
+				float dy = Mth.sin(-shapeRotate * 0.0174532f);
 				shapePosX += (int)(dx * 10.0f * dt);
 				shapePosY -= (int)(dy * 10.0f * dt);
-				if(MathHelper.abs(shapePosX - renderViewX * playerCoordsNoiseMapScale - cloud3DSamplesTextureSizeX * 0.5f) > 300.0f ||
-						MathHelper.abs(shapePosY - renderViewZ * playerCoordsNoiseMapScale - cloud3DSamplesTextureSizeY * 0.5f) > 300.0f) {
+				if(Mth.abs(shapePosX - renderViewX * playerCoordsNoiseMapScale - cloud3DSamplesTextureSizeX * 0.5f) > 300.0f ||
+						Mth.abs(shapePosY - renderViewZ * playerCoordsNoiseMapScale - cloud3DSamplesTextureSizeY * 0.5f) > 300.0f) {
 					nextShapeAppearance = millis + 300000l + rand.nextInt(1500000);
 					isDrawingCloudShapes = false;
 				}

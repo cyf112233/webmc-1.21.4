@@ -16,26 +16,23 @@
 
 package net.lax1dude.eaglercraft.v1_8.internal;
 
-import net.minecraft.util.Util;
+import net.minecraft.util.Mth;
 
 public enum EnumPlatformOS {
-	WINDOWS("Windows", Util.EnumOS.WINDOWS), MACOS("MacOS", Util.EnumOS.OSX), LINUX("Linux", Util.EnumOS.LINUX),
-	CHROMEBOOK_LINUX("ChromeOS", Util.EnumOS.LINUX), OTHER("Unknown", Util.EnumOS.UNKNOWN);
+	WINDOWS("Windows"),
+	MACOS("MacOS"),
+	LINUX("Linux"),
+	CHROMEBOOK_LINUX("ChromeOS"),
+	OTHER("Unknown");
 
 	private final String name;
-	private final Util.EnumOS minecraftEnum;
 	
-	private EnumPlatformOS(String name, Util.EnumOS minecraftEnum) {
+	private EnumPlatformOS(String name) {
 		this.name = name;
-		this.minecraftEnum = minecraftEnum;
 	}
 	
 	public String getName() {
 		return name;
-	}
-	
-	public Util.EnumOS getMinecraftEnum() {
-		return minecraftEnum;
 	}
 	
 	public String toString() {
@@ -46,36 +43,43 @@ public enum EnumPlatformOS {
 		if(osNameProperty == null) {
 			return OTHER;
 		}
-		osNameProperty = osNameProperty.toLowerCase();
-		if(osNameProperty.contains("chrome")) {
+		String osName = osNameProperty.toLowerCase();
+		if (osName.contains("chrome")) {
 			return CHROMEBOOK_LINUX;
-		}else if(osNameProperty.contains("linux")) {
-			return LINUX;
-		}else if(osNameProperty.contains("windows") || osNameProperty.contains("win32")) {
-			return WINDOWS;
-		}else if(osNameProperty.contains("macos") || osNameProperty.contains("osx")) {
-			return MACOS;
-		}else {
-			return OTHER;
 		}
+		if (osName.contains("win")) {
+			return WINDOWS;
+		}
+		if (osName.contains("mac")) {
+			return MACOS;
+		}
+		if (osName.contains("linux") || osName.contains("unix") || 
+				osName.contains("solaris") || osName.contains("sunos")) {
+			return LINUX;
+		}
+		return OTHER;
 	}
 	
 	public static EnumPlatformOS getFromUA(String ua) {
 		if(ua == null) {
 			return OTHER;
 		}
-		ua = " " + ua.toLowerCase();
-		if(ua.contains(" cros")) {
+		String uaLower = " " + ua.toLowerCase() + " ";
+		if(uaLower.contains(" cros ") || uaLower.contains("chrome")) {
 			return CHROMEBOOK_LINUX;
-		}else if(ua.contains(" linux")) {
-			return LINUX;
-		}else if(ua.contains(" windows") || ua.contains(" win32") || ua.contains(" win64")) {
-			return WINDOWS;
-		}else if(ua.contains(" macos") || ua.contains(" osx")) {
-			return MACOS;
-		}else {
-			return OTHER;
 		}
+		if(uaLower.contains(" win")) {
+			return WINDOWS;
+		}
+		if(uaLower.contains(" mac ") || uaLower.contains(" os x ")) {
+			return MACOS;
+		}
+		if(uaLower.contains(" linux") || uaLower.contains(" unix") || 
+		   uaLower.contains(" bsd") || uaLower.contains(" sunos") ||
+		   uaLower.contains(" x11 ") || uaLower.contains(" xorg ")) {
+			return LINUX;
+		}
+		return OTHER;
 	}
 	
 }

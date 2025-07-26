@@ -23,21 +23,21 @@ import java.io.InputStream;
 
 import net.lax1dude.eaglercraft.v1_8.DecoderException;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.GamePacketInputBuffer;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 public class PacketBufferInputWrapper implements GamePacketInputBuffer {
 
-	protected PacketBuffer buffer;
+	protected FriendlyByteBuf buffer;
 
-	public PacketBufferInputWrapper(PacketBuffer buffer) {
+	public PacketBufferInputWrapper(FriendlyByteBuf buffer) {
 		this.buffer = buffer;
 	}
 
-	public PacketBuffer getBuffer() {
+	public FriendlyByteBuf getBuffer() {
 		return buffer;
 	}
 
-	public void setBuffer(PacketBuffer buffer) {
+	public void setBuffer(FriendlyByteBuf buffer) {
 		this.buffer = buffer;
 	}
 
@@ -264,7 +264,7 @@ public class PacketBufferInputWrapper implements GamePacketInputBuffer {
 
 			@Override
 			public long skip(long n) throws IOException {
-				return PacketBufferInputWrapper.this.skipBytes((int)n);
+				return FriendlyByteBufInputWrapper.this.skipBytes((int)n);
 			}
 
 			@Override

@@ -37,17 +37,17 @@ public class IPCPacketManager {
 	static {
 		mappings.put(IPCPacket00StartServer.ID, IPCPacket00StartServer::new);
 		mappings.put(IPCPacket01StopServer.ID, IPCPacket01StopServer::new);
-		mappings.put(IPCPacket02InitWorld.ID, IPCPacket02InitWorld::new);
-		mappings.put(IPCPacket03DeleteWorld.ID, IPCPacket03DeleteWorld::new);
+		mappings.put(IPCPacket02InitLevel.ID, IPCPacket02InitLevel::new);
+		mappings.put(IPCPacket03DeleteLevel.ID, IPCPacket03DeleteLevel::new);
 		mappings.put(IPCPacket05RequestData.ID, IPCPacket05RequestData::new);
-		mappings.put(IPCPacket06RenameWorldNBT.ID, IPCPacket06RenameWorldNBT::new);
-		mappings.put(IPCPacket07ImportWorld.ID, IPCPacket07ImportWorld::new);
+		mappings.put(IPCPacket06RenameLevelNBT.ID, IPCPacket06RenameLevelNBT::new);
+		mappings.put(IPCPacket07ImportLevel.ID, IPCPacket07ImportLevel::new);
 		mappings.put(IPCPacket09RequestResponse.ID, IPCPacket09RequestResponse::new);
-		mappings.put(IPCPacket0ASetWorldDifficulty.ID, IPCPacket0ASetWorldDifficulty::new);
+		mappings.put(IPCPacket0ASetLevelDifficulty.ID, IPCPacket0ASetLevelDifficulty::new);
 		mappings.put(IPCPacket0BPause.ID, IPCPacket0BPause::new);
 		mappings.put(IPCPacket0CPlayerChannel.ID, IPCPacket0CPlayerChannel::new);
 		mappings.put(IPCPacket0DProgressUpdate.ID, IPCPacket0DProgressUpdate::new);
-		mappings.put(IPCPacket0EListWorlds.ID, IPCPacket0EListWorlds::new);
+		mappings.put(IPCPacket0EListLevels.ID, IPCPacket0EListLevels::new);
 		mappings.put(IPCPacket0FListFiles.ID, IPCPacket0FListFiles::new);
 		mappings.put(IPCPacket10FileRead.ID, IPCPacket10FileRead::new);
 		mappings.put(IPCPacket12FileWrite.ID, IPCPacket12FileWrite::new);

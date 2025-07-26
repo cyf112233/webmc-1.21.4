@@ -24,9 +24,9 @@ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.CPacketGetOtherClientUUIDV4EAG;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 
 public class ClientUUIDLoadingCache {
 
@@ -46,13 +46,13 @@ public class ClientUUIDLoadingCache {
 	 *         VANILLA_UUID if vanilla, or the remote player's
 	 *         client's EaglercraftVersion.clientBrandUUID
 	 */
-	public static EaglercraftUUID getPlayerClientBrandUUID(EntityPlayer player) {
+	public static EaglercraftUUID getPlayerClientBrandUUID(Player player) {
 		EaglercraftUUID ret = null;
 		if(player instanceof AbstractClientPlayer) {
 			ret = ((AbstractClientPlayer)player).clientBrandUUIDCache;
 			if(ret == null) {
 				Minecraft mc = Minecraft.getMinecraft();
-				if(mc != null && mc.thePlayer != null && mc.thePlayer.sendQueue.getEaglerMessageProtocol().ver >= 4) {
+				if(mc != null && mc.player != null && mc.player.sendQueue.getEaglerMessageProtocol().ver >= 4) {
 					if(ignoreNonEaglerPlayers && !player.getGameProfile().getTextures().eaglerPlayer) {
 						ret = VANILLA_UUID;
 					}else {
@@ -64,14 +64,14 @@ public class ClientUUIDLoadingCache {
 									(AbstractClientPlayer) player);
 							waitingIDs.put(reqID, newLookup);
 							waitingUUIDs.put(playerUUID, newLookup);
-							mc.thePlayer.sendQueue.sendEaglerMessage(
+							mc.player.sendQueue.sendEaglerMessage(
 									new CPacketGetOtherClientUUIDV4EAG(reqID, newLookup.uuid.msb, newLookup.uuid.lsb));
 						}
 					}
 				}
 			}
-		}else if(player instanceof EntityPlayerMP) {
-			ret = ((EntityPlayerMP)player).clientBrandUUID;
+		}else if(player instanceof ServerPlayer) {
+			ret = ((ServerPlayer)player).clientBrandUUID;
 		}
 		if(ret == null) {
 			ret = NULL_UUID;

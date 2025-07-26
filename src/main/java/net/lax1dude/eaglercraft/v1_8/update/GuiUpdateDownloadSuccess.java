@@ -16,42 +16,42 @@
 
 package net.lax1dude.eaglercraft.v1_8.update;
 
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 
-public class GuiUpdateDownloadSuccess extends GuiScreen {
+public class GuiUpdateDownloadSuccess extends Screen {
 
-	protected final GuiScreen parent;
+	protected final Screen parent;
 	protected final UpdateDataObj updateData;
 
-	public GuiUpdateDownloadSuccess(GuiScreen parent, UpdateDataObj updateData) {
+	public GuiUpdateDownloadSuccess(Screen parent, UpdateDataObj updateData) {
 		this.parent = parent;
 		this.updateData = updateData;
 	}
 
 	public void initGui() {
 		this.buttonList.clear();
-		this.buttonList.add(new GuiButton(0, this.width / 2 - 100, this.height / 6 + 56, I18n.format("updateSuccess.downloadOffline")));
-		this.buttonList.add(new GuiButton(1, this.width / 2 - 100, this.height / 6 + 86, I18n.format("updateSuccess.installToBootMenu")));
-		this.buttonList.add(new GuiButton(2, this.width / 2 - 100, this.height / 6 + 130, I18n.format("gui.cancel")));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(0, this.width / 2 - 100, this.height / 6 + 56, I18n.get("updateSuccess.downloadOffline")));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(1, this.width / 2 - 100, this.height / 6 + 86, I18n.get("updateSuccess.installToBootMenu")));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(2, this.width / 2 - 100, this.height / 6 + 130, I18n.get("gui.cancel")));
 	}
 
-	public void actionPerformed(GuiButton btn) {
+	public void actionPerformed(net.minecraft.client.gui.components.Button btn) {
 		if(btn.id == 0) {
-			this.mc.loadingScreen.eaglerShow(I18n.format("updateSuccess.downloading"), null);
+			this.minecraft.loadingScreen.eaglerShow(I18n.get("updateSuccess.downloading"), null);
 			UpdateService.quine(updateData.clientSignature, updateData.clientBundle);
-			this.mc.displayGuiScreen(parent);
+			this.minecraft.displayScreen(parent);
 		}else if(btn.id == 1) {
-			this.mc.displayGuiScreen(new GuiUpdateInstallOptions(this, parent, updateData));
+			this.minecraft.displayScreen(new GuiUpdateInstallOptions(this, parent, updateData));
 		}else if(btn.id == 2) {
-			this.mc.displayGuiScreen(parent);
+			this.minecraft.displayScreen(parent);
 		}
 	}
 
 	public void drawScreen(int par1, int par2, float par3) {
 		this.drawDefaultBackground();
-		this.drawCenteredString(fontRendererObj, I18n.format("updateSuccess.title"), this.width / 2, 50, 11184810);
+		this.drawCenteredString(fontRendererObj, I18n.get("updateSuccess.title"), this.width / 2, 50, 11184810);
 		this.drawCenteredString(fontRendererObj,
 				updateData.clientSignature.bundleDisplayName + " " + updateData.clientSignature.bundleDisplayVersion,
 				this.width / 2, 70, 0xFFFFAA);

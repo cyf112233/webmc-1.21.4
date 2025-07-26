@@ -27,31 +27,7 @@ import org.json.JSONException;
 import net.lax1dude.eaglercraft.v1_8.json.impl.JSONDataParserReader;
 import net.lax1dude.eaglercraft.v1_8.json.impl.JSONDataParserStream;
 import net.lax1dude.eaglercraft.v1_8.json.impl.JSONDataParserString;
-import net.lax1dude.eaglercraft.v1_8.json.impl.SoundMapDeserializer;
-import net.minecraft.client.audio.SoundHandler.SoundMap;
-import net.minecraft.client.audio.SoundList;
-import net.minecraft.client.audio.SoundListSerializer;
-import net.minecraft.client.renderer.block.model.BlockFaceUV;
-import net.minecraft.client.renderer.block.model.BlockPart;
-import net.minecraft.client.renderer.block.model.BlockPartFace;
-import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
-import net.minecraft.client.renderer.block.model.ItemTransformVec3f;
-import net.minecraft.client.renderer.block.model.ModelBlock;
-import net.minecraft.client.renderer.block.model.ModelBlockDefinition;
-import net.minecraft.client.resources.data.AnimationMetadataSection;
-import net.minecraft.client.resources.data.AnimationMetadataSectionSerializer;
-import net.minecraft.client.resources.data.FontMetadataSection;
-import net.minecraft.client.resources.data.FontMetadataSectionSerializer;
-import net.minecraft.client.resources.data.LanguageMetadataSection;
-import net.minecraft.client.resources.data.LanguageMetadataSectionSerializer;
-import net.minecraft.client.resources.data.PackMetadataSection;
-import net.minecraft.client.resources.data.PackMetadataSectionSerializer;
-import net.minecraft.client.resources.data.TextureMetadataSection;
-import net.minecraft.client.resources.data.TextureMetadataSectionSerializer;
-import net.minecraft.network.ServerStatusResponse;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.IChatComponent;
-import net.minecraft.world.gen.ChunkProviderSettings;
+import net.lax1dude.eaglercraft.v1_8.json.impl.SoundManager;
 
 public class JSONTypeProvider {
 
@@ -129,13 +105,13 @@ public class JSONTypeProvider {
 	
 	static {
 		
-		registerType(IChatComponent.class, new IChatComponent.Serializer());
+		registerType(Component.class, new Component.Serializer());
 		registerType(ChatStyle.class, new ChatStyle.Serializer());
-		registerType(ServerStatusResponse.class, new ServerStatusResponse.Serializer());
-		registerType(ServerStatusResponse.MinecraftProtocolVersionIdentifier.class,
-				new ServerStatusResponse.MinecraftProtocolVersionIdentifier.Serializer());
-		registerType(ServerStatusResponse.PlayerCountData.class,
-				new ServerStatusResponse.PlayerCountData.Serializer());
+		registerType(ServerStatus.class, new ServerStatus.Serializer());
+		registerType(ServerStatus.MinecraftProtocolVersionIdentifier.class,
+				new ServerStatus.MinecraftProtocolVersionIdentifier.Serializer());
+		registerType(ServerStatus.PlayerCountData.class,
+				new ServerStatus.PlayerCountData.Serializer());
 		registerType(ModelBlock.class, new ModelBlock.Deserializer());
 		registerType(BlockPart.class, new BlockPart.Deserializer());
 		registerType(BlockPartFace.class, new BlockPartFace.Deserializer());
@@ -145,7 +121,7 @@ public class JSONTypeProvider {
 		registerType(ModelBlockDefinition.class, new ModelBlockDefinition.Deserializer());
 		registerType(ModelBlockDefinition.Variant.class, new ModelBlockDefinition.Variant.Deserializer());
 		registerType(SoundList.class, new SoundListSerializer());
-		registerType(SoundMap.class, new SoundMapDeserializer());
+		registerType(SoundManager.SoundMap.class, new SoundManager.SoundManager.SoundMapDeserializer());
 		registerType(TextureMetadataSection.class, new TextureMetadataSectionSerializer());
 		registerType(FontMetadataSection.class, new FontMetadataSectionSerializer());
 		registerType(LanguageMetadataSection.class, new LanguageMetadataSectionSerializer());

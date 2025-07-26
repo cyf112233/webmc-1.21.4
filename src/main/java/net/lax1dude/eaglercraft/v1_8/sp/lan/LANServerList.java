@@ -79,7 +79,7 @@ public class LANServerList {
 							}
 						}
 						if(rl != null) {
-							Iterator<RelayPacket07LocalWorlds.LocalWorld> itr3 = q.getWorlds().iterator();
+							Iterator<RelayPacket07LocalWorlds.LocalWorld> itr3 = q.getLevels().iterator();
 							yee: while(itr3.hasNext()) {
 								RelayPacket07LocalWorlds.LocalWorld l = itr3.next();
 								itr2 = lanServersList.iterator();

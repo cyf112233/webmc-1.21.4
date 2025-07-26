@@ -1,180 +1,176 @@
 package net.minecraft.client.gui.spectator;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
+import java.util.List;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.spectator.categories.SpectatorPage;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ARGB;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiSpectator;
-import net.minecraft.client.gui.spectator.categories.SpectatorDetails;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.IChatComponent;
-
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
+@OnlyIn(Dist.CLIENT)
 public class SpectatorMenu {
-	private static final ISpectatorMenuObject field_178655_b = new SpectatorMenu.EndSpectatorObject();
-	private static final ISpectatorMenuObject field_178656_c = new SpectatorMenu.MoveMenuObject(-1, true);
-	private static final ISpectatorMenuObject field_178653_d = new SpectatorMenu.MoveMenuObject(1, true);
-	private static final ISpectatorMenuObject field_178654_e = new SpectatorMenu.MoveMenuObject(1, false);
-	public static final ISpectatorMenuObject field_178657_a = new ISpectatorMenuObject() {
-		public void func_178661_a(SpectatorMenu var1) {
-		}
+    static final ResourceLocation CLOSE_SPRITE = ResourceLocation.withDefaultNamespace("spectator/close");
+    static final ResourceLocation SCROLL_LEFT_SPRITE = ResourceLocation.withDefaultNamespace("spectator/scroll_left");
+    static final ResourceLocation SCROLL_RIGHT_SPRITE = ResourceLocation.withDefaultNamespace("spectator/scroll_right");
+    private static final SpectatorMenuItem CLOSE_ITEM = new SpectatorMenu.CloseSpectatorItem();
+    private static final SpectatorMenuItem SCROLL_LEFT = new SpectatorMenu.ScrollMenuItem(-1, true);
+    private static final SpectatorMenuItem SCROLL_RIGHT_ENABLED = new SpectatorMenu.ScrollMenuItem(1, true);
+    private static final SpectatorMenuItem SCROLL_RIGHT_DISABLED = new SpectatorMenu.ScrollMenuItem(1, false);
+    private static final int MAX_PER_PAGE = 8;
+    static final Component CLOSE_MENU_TEXT = Component.translatable("spectatorMenu.close");
+    static final Component PREVIOUS_PAGE_TEXT = Component.translatable("spectatorMenu.previous_page");
+    static final Component NEXT_PAGE_TEXT = Component.translatable("spectatorMenu.next_page");
+    public static final SpectatorMenuItem EMPTY_SLOT = new SpectatorMenuItem() {
+        @Override
+        public void selectItem(SpectatorMenu p_101812_) {
+        }
 
-		public IChatComponent getSpectatorName() {
-			return new ChatComponentText("");
-		}
+        @Override
+        public Component getName() {
+            return CommonComponents.EMPTY;
+        }
 
-		public void func_178663_a(float var1, int var2) {
-		}
+        @Override
+        public void renderIcon(GuiGraphics p_283652_, float p_101809_, float p_363989_) {
+        }
 
-		public boolean func_178662_A_() {
-			return false;
-		}
-	};
-	private final ISpectatorMenuRecipient field_178651_f;
-	private final List<SpectatorDetails> field_178652_g = Lists.newArrayList();
-	private ISpectatorMenuView field_178659_h = new BaseSpectatorGroup();
-	private int field_178660_i = -1;
-	private int field_178658_j;
+        @Override
+        public boolean isEnabled() {
+            return false;
+        }
+    };
+    private final SpectatorMenuListener listener;
+    private SpectatorMenuCategory category;
+    private int selectedSlot = -1;
+    int page;
 
-	public SpectatorMenu(ISpectatorMenuRecipient parISpectatorMenuRecipient) {
-		this.field_178651_f = parISpectatorMenuRecipient;
-	}
+    public SpectatorMenu(SpectatorMenuListener p_101785_) {
+        this.category = new RootSpectatorMenuCategory();
+        this.listener = p_101785_;
+    }
 
-	public ISpectatorMenuObject func_178643_a(int parInt1) {
-		int i = parInt1 + this.field_178658_j * 6;
-		return this.field_178658_j > 0 && parInt1 == 0 ? field_178656_c
-				: (parInt1 == 7 ? (i < this.field_178659_h.func_178669_a().size() ? field_178653_d : field_178654_e)
-						: (parInt1 == 8 ? field_178655_b
-								: (i >= 0 && i < this.field_178659_h.func_178669_a().size()
-										? (ISpectatorMenuObject) Objects.firstNonNull(
-												this.field_178659_h.func_178669_a().get(i), field_178657_a)
-										: field_178657_a)));
-	}
+    public SpectatorMenuItem getItem(int p_101788_) {
+        int i = p_101788_ + this.page * 6;
+        if (this.page > 0 && p_101788_ == 0) {
+            return SCROLL_LEFT;
+        } else if (p_101788_ == 7) {
+            return i < this.category.getItems().size() ? SCROLL_RIGHT_ENABLED : SCROLL_RIGHT_DISABLED;
+        } else if (p_101788_ == 8) {
+            return CLOSE_ITEM;
+        } else {
+            return i >= 0 && i < this.category.getItems().size() ? MoreObjects.firstNonNull(this.category.getItems().get(i), EMPTY_SLOT) : EMPTY_SLOT;
+        }
+    }
 
-	public List<ISpectatorMenuObject> func_178642_a() {
-		ArrayList arraylist = Lists.newArrayList();
+    public List<SpectatorMenuItem> getItems() {
+        List<SpectatorMenuItem> list = Lists.newArrayList();
 
-		for (int i = 0; i <= 8; ++i) {
-			arraylist.add(this.func_178643_a(i));
-		}
+        for (int i = 0; i <= 8; i++) {
+            list.add(this.getItem(i));
+        }
 
-		return arraylist;
-	}
+        return list;
+    }
 
-	public ISpectatorMenuObject func_178645_b() {
-		return this.func_178643_a(this.field_178660_i);
-	}
+    public SpectatorMenuItem getSelectedItem() {
+        return this.getItem(this.selectedSlot);
+    }
 
-	public ISpectatorMenuView func_178650_c() {
-		return this.field_178659_h;
-	}
+    public SpectatorMenuCategory getSelectedCategory() {
+        return this.category;
+    }
 
-	public void func_178644_b(int parInt1) {
-		ISpectatorMenuObject ispectatormenuobject = this.func_178643_a(parInt1);
-		if (ispectatormenuobject != field_178657_a) {
-			if (this.field_178660_i == parInt1 && ispectatormenuobject.func_178662_A_()) {
-				ispectatormenuobject.func_178661_a(this);
-			} else {
-				this.field_178660_i = parInt1;
-			}
-		}
+    public void selectSlot(int p_101798_) {
+        SpectatorMenuItem spectatormenuitem = this.getItem(p_101798_);
+        if (spectatormenuitem != EMPTY_SLOT) {
+            if (this.selectedSlot == p_101798_ && spectatormenuitem.isEnabled()) {
+                spectatormenuitem.selectItem(this);
+            } else {
+                this.selectedSlot = p_101798_;
+            }
+        }
+    }
 
-	}
+    public void exit() {
+        this.listener.onSpectatorMenuClosed(this);
+    }
 
-	public void func_178641_d() {
-		this.field_178651_f.func_175257_a(this);
-	}
+    public int getSelectedSlot() {
+        return this.selectedSlot;
+    }
 
-	public int func_178648_e() {
-		return this.field_178660_i;
-	}
+    public void selectCategory(SpectatorMenuCategory p_101795_) {
+        this.category = p_101795_;
+        this.selectedSlot = -1;
+        this.page = 0;
+    }
 
-	public void func_178647_a(ISpectatorMenuView parISpectatorMenuView) {
-		this.field_178652_g.add(this.func_178646_f());
-		this.field_178659_h = parISpectatorMenuView;
-		this.field_178660_i = -1;
-		this.field_178658_j = 0;
-	}
+    public SpectatorPage getCurrentPage() {
+        return new SpectatorPage(this.getItems(), this.selectedSlot);
+    }
 
-	public SpectatorDetails func_178646_f() {
-		return new SpectatorDetails(this.field_178659_h, this.func_178642_a(), this.field_178660_i);
-	}
+    @OnlyIn(Dist.CLIENT)
+    static class CloseSpectatorItem implements SpectatorMenuItem {
+        @Override
+        public void selectItem(SpectatorMenu p_101823_) {
+            p_101823_.exit();
+        }
 
-	static class EndSpectatorObject implements ISpectatorMenuObject {
-		private EndSpectatorObject() {
-		}
+        @Override
+        public Component getName() {
+            return SpectatorMenu.CLOSE_MENU_TEXT;
+        }
 
-		public void func_178661_a(SpectatorMenu spectatormenu) {
-			spectatormenu.func_178641_d();
-		}
+        @Override
+        public void renderIcon(GuiGraphics p_283113_, float p_282295_, float p_361644_) {
+            p_283113_.blitSprite(RenderType::guiTextured, SpectatorMenu.CLOSE_SPRITE, 0, 0, 16, 16, ARGB.colorFromFloat(p_361644_, p_282295_, p_282295_, p_282295_));
+        }
 
-		public IChatComponent getSpectatorName() {
-			return new ChatComponentText("Close menu");
-		}
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+    }
 
-		public void func_178663_a(float var1, int var2) {
-			Minecraft.getMinecraft().getTextureManager().bindTexture(GuiSpectator.field_175269_a);
-			Gui.drawModalRectWithCustomSizedTexture(0, 0, 128.0F, 0.0F, 16, 16, 256.0F, 256.0F);
-		}
+    @OnlyIn(Dist.CLIENT)
+    static class ScrollMenuItem implements SpectatorMenuItem {
+        private final int direction;
+        private final boolean enabled;
 
-		public boolean func_178662_A_() {
-			return true;
-		}
-	}
+        public ScrollMenuItem(int p_101829_, boolean p_101830_) {
+            this.direction = p_101829_;
+            this.enabled = p_101830_;
+        }
 
-	static class MoveMenuObject implements ISpectatorMenuObject {
-		private final int field_178666_a;
-		private final boolean field_178665_b;
+        @Override
+        public void selectItem(SpectatorMenu p_101836_) {
+            p_101836_.page = p_101836_.page + this.direction;
+        }
 
-		public MoveMenuObject(int parInt1, boolean parFlag) {
-			this.field_178666_a = parInt1;
-			this.field_178665_b = parFlag;
-		}
+        @Override
+        public Component getName() {
+            return this.direction < 0 ? SpectatorMenu.PREVIOUS_PAGE_TEXT : SpectatorMenu.NEXT_PAGE_TEXT;
+        }
 
-		public void func_178661_a(SpectatorMenu spectatormenu) {
-			spectatormenu.field_178658_j = this.field_178666_a;
-		}
+        @Override
+        public void renderIcon(GuiGraphics p_281376_, float p_282065_, float p_360875_) {
+            int i = ARGB.colorFromFloat(p_360875_, p_282065_, p_282065_, p_282065_);
+            if (this.direction < 0) {
+                p_281376_.blitSprite(RenderType::guiTextured, SpectatorMenu.SCROLL_LEFT_SPRITE, 0, 0, 16, 16, i);
+            } else {
+                p_281376_.blitSprite(RenderType::guiTextured, SpectatorMenu.SCROLL_RIGHT_SPRITE, 0, 0, 16, 16, i);
+            }
+        }
 
-		public IChatComponent getSpectatorName() {
-			return this.field_178666_a < 0 ? new ChatComponentText("Previous Page")
-					: new ChatComponentText("Next Page");
-		}
-
-		public void func_178663_a(float var1, int var2) {
-			Minecraft.getMinecraft().getTextureManager().bindTexture(GuiSpectator.field_175269_a);
-			if (this.field_178666_a < 0) {
-				Gui.drawModalRectWithCustomSizedTexture(0, 0, 144.0F, 0.0F, 16, 16, 256.0F, 256.0F);
-			} else {
-				Gui.drawModalRectWithCustomSizedTexture(0, 0, 160.0F, 0.0F, 16, 16, 256.0F, 256.0F);
-			}
-
-		}
-
-		public boolean func_178662_A_() {
-			return this.field_178665_b;
-		}
-	}
+        @Override
+        public boolean isEnabled() {
+            return this.enabled;
+        }
+    }
 }

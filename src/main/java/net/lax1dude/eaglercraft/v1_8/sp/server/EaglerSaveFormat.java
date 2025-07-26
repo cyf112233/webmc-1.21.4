@@ -24,44 +24,44 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.Lists;
 
 import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
-import net.minecraft.world.storage.ISaveHandler;
-import net.minecraft.world.storage.SaveFormatComparator;
-import net.minecraft.world.storage.SaveFormatOld;
-import net.minecraft.world.storage.WorldInfo;
+import net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess;
+import net.minecraft.world.level.storage.LevelSummary;
+import net.minecraft.world.level.storage.LevelStorageSource;
+import net.minecraft.world.level.storage.LevelData;
 
-public class EaglerSaveFormat extends SaveFormatOld {
+public class EaglerSaveFormat extends LevelStorageSource {
 
 	public EaglerSaveFormat(VFile2 parFile) {
 		super(parFile);
 	}
 
-	public static final VFile2 worldsList = WorldsDB.newVFile("worlds_list.txt");
-	public static final VFile2 worldsFolder = WorldsDB.newVFile("worlds");
+	public static final VFile2 worldsList = LevelsDB.newVFile("worlds_list.txt");
+	public static final VFile2 worldsFolder = LevelsDB.newVFile("worlds");
 
 	public String getName() {
 		return "eagler";
 	}
 
-	public ISaveHandler getSaveLoader(String s, boolean flag) {
+	public LevelStorageSource.LevelStorageAccess getSaveLoader(String s, boolean flag) {
 		return new EaglerSaveHandler(this.savesDirectory, s);
 	}
 
-	public List<SaveFormatComparator> getSaveList() {
-		ArrayList<SaveFormatComparator> arraylist = Lists.newArrayList();
+	public List<LevelSummary> getSaveList() {
+		ArrayList<LevelSummary> arraylist = Lists.newArrayList();
 		if(worldsList.exists()) {
 			String[] lines = worldsList.getAllLines();
 			for (int i = 0; i < lines.length; ++i) {
 				String s = lines[i];
-				WorldInfo worldinfo = this.getWorldInfo(s);
+				LevelData worldinfo = this.getLevelData(s);
 				if (worldinfo != null
 						&& (worldinfo.getSaveVersion() == 19132 || worldinfo.getSaveVersion() == 19133)) {
 					boolean flag = worldinfo.getSaveVersion() != this.getSaveVersion();
-					String s1 = worldinfo.getWorldName();
+					String s1 = worldinfo.getLevelName();
 					if (StringUtils.isEmpty(s1)) {
 						s1 = s;
 					}
 
-					arraylist.add(new SaveFormatComparator(s, s1, worldinfo.getLastTimePlayed(), 0l,
+					arraylist.add(new LevelSummary(s, s1, worldinfo.getLastTimePlayed(), 0l,
 							worldinfo.getGameType(), flag, worldinfo.isHardcoreModeEnabled(),
 							worldinfo.areCommandsAllowed(), null));
 				}
@@ -71,7 +71,7 @@ public class EaglerSaveFormat extends SaveFormatOld {
 	}
 
 	public void clearPlayers(String worldFolder) {
-		VFile2 file1 = WorldsDB.newVFile(this.savesDirectory, worldFolder, "player");
+		VFile2 file1 = LevelsDB.newVFile(this.savesDirectory, worldFolder, "player");
 		deleteFiles(file1.listFiles(true), null);
 	}
 
@@ -79,14 +79,14 @@ public class EaglerSaveFormat extends SaveFormatOld {
 		return 19133; // why notch?
 	}
 
-	public boolean duplicateWorld(String worldFolder, String displayName) {
+	public boolean duplicateLevel(String worldFolder, String displayName) {
 		String newFolderName = displayName.replaceAll("[\\./\"]", "_");
-		VFile2 newFolder = WorldsDB.newVFile(savesDirectory, newFolderName);
-		while((WorldsDB.newVFile(newFolder, "level.dat")).exists() || (WorldsDB.newVFile(newFolder, "level.dat_old")).exists()) {
+		VFile2 newFolder = LevelsDB.newVFile(savesDirectory, newFolderName);
+		while((LevelsDB.newVFile(newFolder, "level.dat")).exists() || (LevelsDB.newVFile(newFolder, "level.dat_old")).exists()) {
 			newFolderName += "_";
-			newFolder = WorldsDB.newVFile(savesDirectory, newFolderName);
+			newFolder = LevelsDB.newVFile(savesDirectory, newFolderName);
 		}
-		VFile2 oldFolder = WorldsDB.newVFile(this.savesDirectory, worldFolder);
+		VFile2 oldFolder = LevelsDB.newVFile(this.savesDirectory, worldFolder);
 		String oldPath = oldFolder.getPath();
 		int totalSize = 0;
 		int lastUpdate = 0;
@@ -95,7 +95,7 @@ public class EaglerSaveFormat extends SaveFormatOld {
 		for(int i = 0, l = vfl.size(); i < l; ++i) {
 			VFile2 vf = vfl.get(i);
 			String fileNameRelative = vf.getPath().substring(oldPath.length() + 1);
-			totalSize += VFile2.copyFile(vf, WorldsDB.newVFile(finalNewFolder, fileNameRelative));
+			totalSize += VFile2.copyFile(vf, LevelsDB.newVFile(finalNewFolder, fileNameRelative));
 			if (totalSize - lastUpdate > 10000) {
 				lastUpdate = totalSize;
 				EaglerIntegratedServerWorker.sendProgress("singleplayer.busy.duplicating", totalSize);
@@ -111,6 +111,6 @@ public class EaglerSaveFormat extends SaveFormatOld {
 			worldsTxt[worldsTxt.length - 1] = newFolderName;
 		}
 		worldsList.setAllChars(String.join("\n", worldsTxt));
-		return renameWorld(newFolderName, displayName);
+		return renameLevel(newFolderName, displayName);
 	}
 }

@@ -1,5 +1,7 @@
 {
-    "variants": {
-        "normal": { "model": "glass_light_blue" }
+  "variants": {
+    "": {
+      "model": "minecraft:block/light_blue_stained_glass"
     }
+  }
 }

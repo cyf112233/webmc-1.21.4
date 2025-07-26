@@ -21,23 +21,23 @@ import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.sp.lan.LANServerController;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
+import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.ChatFormatting;
+import net.minecraft.resources.ResourceLocation;
 
 public class GuiNetworkSettingsButton extends Gui {
 
-	private final GuiScreen screen;
+	private final Screen screen;
 	private final String text;
 	private final Minecraft mc;
 
-	public GuiNetworkSettingsButton(GuiScreen screen) {
+	public GuiNetworkSettingsButton(Screen screen) {
 		this.screen = screen;
-		this.text = I18n.format("directConnect.lanWorldRelay");
-		this.mc = Minecraft.getMinecraft();
+		this.text = I18n.get("directConnect.lanLevelRelay");
+		this.minecraft = Minecraft.getMinecraft();
 	}
 
 	public void drawScreen(int xx, int yy) {
@@ -45,26 +45,26 @@ public class GuiNetworkSettingsButton extends Gui {
 		GlStateManager.scale(0.75f, 0.75f, 0.75f);
 		GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
 
-		int w = mc.fontRendererObj.getStringWidth(text);
+		int w = mc.font.getStringWidth(text);
 		boolean hover = xx > 1 && yy > 1 && xx < (w * 3 / 4) + 7 && yy < 12;
 		if(hover) {
 			Mouse.showCursor(EnumCursorType.HAND);
 		}
 
-		drawString(mc.fontRendererObj, EnumChatFormatting.UNDERLINE + text, 5, 5, hover ? 0xFFEEEE22 : 0xFFCCCCCC);
+		drawString(mc.font, ChatFormatting.UNDERLINE + text, 5, 5, hover ? 0xFFEEEE22 : 0xFFCCCCCC);
 
 		GlStateManager.popMatrix();
 	}
 
 	public void mouseClicked(int xx, int yy, int btn) {
-		int w = mc.fontRendererObj.getStringWidth(text);
+		int w = mc.font.getStringWidth(text);
 		if(xx > 2 && yy > 2 && xx < (w * 3 / 4) + 5 && yy < 12) {
 			if(LANServerController.supported()) {
-				mc.displayGuiScreen(GuiScreenLANInfo.showLANInfoScreen(new GuiScreenRelay(screen)));
+				mc.displayScreen(ScreenLANInfo.showLANInfoScreen(new ScreenRelay(screen)));
 			}else {
-				mc.displayGuiScreen(new GuiScreenLANNotSupported(screen));
+				mc.displayScreen(new ScreenLANNotSupported(screen));
 			}
-			this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+			this.minecraft.getSoundManager().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
 		}
 	}
 

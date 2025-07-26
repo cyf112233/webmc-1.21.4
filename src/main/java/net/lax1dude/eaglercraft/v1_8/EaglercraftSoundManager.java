@@ -28,17 +28,17 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformAudio;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.ISound;
-import net.minecraft.client.audio.ISound.AttenuationType;
-import net.minecraft.client.audio.ITickableSound;
-import net.minecraft.client.audio.SoundCategory;
-import net.minecraft.client.audio.SoundEventAccessorComposite;
-import net.minecraft.client.audio.SoundHandler;
-import net.minecraft.client.audio.SoundPoolEntry;
-import net.minecraft.client.settings.GameSettings;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.ResourceLocation;
+
+import net.minecraft.client.resources.sounds.Sound; // MCP Reborn 1.21.4 package
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.client.resources.sounds.SoundInstance; // MCP Reborn 1.21.4 package
+import net.minecraft.client.resources.sounds.TickableSoundInstance; // MCP Reborn 1.21.4 package
+import net.minecraft.client.sounds.SoundManager;
+import net.minecraft.client.resources.sounds.Sound; // Updated for 1.21.4
+import net.minecraft.client.Options;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.util.Mth;
+import net.minecraft.resources.ResourceLocation;
 
 public class EaglercraftSoundManager {
 	
@@ -46,9 +46,9 @@ public class EaglercraftSoundManager {
 
 		protected final EaglercraftSoundManager manager;
 		
-		protected final ISound soundInstance;
-		protected final SoundCategory soundCategory;
-		protected final SoundPoolEntry soundConfig;
+		protected final SoundInstance soundInstance;
+		protected final SoundSource soundCategory;
+		protected final Sound soundConfig;
 		protected IAudioHandle soundHandle;
 		
 		protected float activeX;
@@ -61,8 +61,8 @@ public class EaglercraftSoundManager {
 		protected int repeatCounter = 0;
 		protected boolean paused = false;
 		
-		protected ActiveSoundEvent(EaglercraftSoundManager manager, ISound soundInstance,
-				SoundCategory soundCategory, SoundPoolEntry soundConfig, IAudioHandle soundHandle) {
+		protected ActiveSoundEvent(EaglercraftSoundManager manager, SoundInstance soundInstance,
+				SoundSource soundCategory, Sound soundConfig, IAudioHandle soundHandle) {
 			this.manager = manager;
 			this.soundInstance = soundInstance;
 			this.soundCategory = soundCategory;
@@ -101,11 +101,11 @@ public class EaglercraftSoundManager {
 	
 	protected static class WaitingSoundEvent {
 		
-		protected final ISound playSound;
+		protected final SoundInstance playSound;
 		protected int playTicks;
 		protected boolean paused = false;
 		
-		private WaitingSoundEvent(ISound playSound, int playTicks) {
+		private WaitingSoundEvent(SoundInstance playSound, int playTicks) {
 			this.playSound = playSound;
 			this.playTicks = playTicks;
 		}
@@ -114,21 +114,21 @@ public class EaglercraftSoundManager {
 	
 	private static final Logger logger = LogManager.getLogger("SoundManager");
 	
-	private final GameSettings settings;
-	private final SoundHandler handler;
+	private final Options settings;
+	private final SoundManager handler;
 	private final float[] categoryVolumes;
 	private final List<ActiveSoundEvent> activeSounds;
 	private final List<WaitingSoundEvent> queuedSounds;
 
-	public EaglercraftSoundManager(GameSettings settings, SoundHandler handler) {
+	public EaglercraftSoundManager(Options settings, SoundManager handler) {
 		this.settings = settings;
 		this.handler = handler;
 		categoryVolumes = new float[] {
-				settings.getSoundLevel(SoundCategory.MASTER), settings.getSoundLevel(SoundCategory.MUSIC),
-				settings.getSoundLevel(SoundCategory.RECORDS), settings.getSoundLevel(SoundCategory.WEATHER),
-				settings.getSoundLevel(SoundCategory.BLOCKS), settings.getSoundLevel(SoundCategory.MOBS),
-				settings.getSoundLevel(SoundCategory.ANIMALS), settings.getSoundLevel(SoundCategory.PLAYERS),
-				settings.getSoundLevel(SoundCategory.AMBIENT)
+				settings.getSoundLevel(SoundSource.MASTER), settings.getSoundLevel(SoundSource.MUSIC),
+				settings.getSoundLevel(SoundSource.RECORDS), settings.getSoundLevel(SoundSource.WEATHER),
+				settings.getSoundLevel(SoundSource.BLOCKS), settings.getSoundLevel(SoundSource.MOBS),
+				settings.getSoundLevel(SoundSource.ANIMALS), settings.getSoundLevel(SoundSource.PLAYERS),
+				settings.getSoundLevel(SoundSource.AMBIENT)
 		};
 		activeSounds = new LinkedList<>();
 		queuedSounds = new LinkedList<>();
@@ -142,12 +142,12 @@ public class EaglercraftSoundManager {
 		PlatformAudio.flushAudioCache();
 	}
 	
-	public void setSoundCategoryVolume(SoundCategory category, float volume) {
+	public void setSoundSourceVolume(SoundSource category, float volume) {
 		categoryVolumes[category.getCategoryId()] = volume;
 		Iterator<ActiveSoundEvent> soundItr = activeSounds.iterator();
 		while(soundItr.hasNext()) {
 			ActiveSoundEvent evt = soundItr.next();
-			if((category == SoundCategory.MASTER || evt.soundCategory == category)
+			if((category == SoundSource.MASTER || evt.soundCategory == category)
 					&& !evt.soundHandle.shouldFree()) {
 				float newVolume = getNormalizedVolume(evt.soundInstance, evt.soundConfig, evt.soundCategory);
 				if(newVolume > 0.0f) {
@@ -206,9 +206,9 @@ public class EaglercraftSoundManager {
 		while(soundItr.hasNext()) {
 			ActiveSoundEvent evt = soundItr.next();
 			boolean persist = false;
-			if(!evt.paused && (evt.soundInstance instanceof ITickableSound)) {
+			if(!evt.paused && (evt.soundInstance instanceof TickableBlockEntitySound)) {
 				boolean destroy = false;
-				ITickableSound snd = (ITickableSound) evt.soundInstance;
+				TickableBlockEntitySound snd = (TickableBlockEntitySound) evt.soundInstance;
 				lbl : {
 					try {
 						snd.update();
@@ -250,7 +250,7 @@ public class EaglercraftSoundManager {
 		PlatformAudio.clearAudioCache();
 	}
 	
-	public boolean isSoundPlaying(ISound sound) {
+	public boolean isSoundPlaying(SoundInstance sound) { // Keep same reference
 		Iterator<ActiveSoundEvent> soundItr = activeSounds.iterator();
 		while(soundItr.hasNext()) {
 			ActiveSoundEvent evt = soundItr.next();
@@ -261,7 +261,7 @@ public class EaglercraftSoundManager {
 		return false;
 	}
 	
-	public void stopSound(ISound sound) {
+	public void stopSound(SoundInstance sound) { // Keep same reference
 		Iterator<ActiveSoundEvent> soundItr = activeSounds.iterator();
 		while(soundItr.hasNext()) {
 			ActiveSoundEvent evt = soundItr.next();
@@ -290,20 +290,20 @@ public class EaglercraftSoundManager {
 		}
 	};
 
-	public void playSound(ISound sound) {
+	public void playSound(SoundInstance sound) { // Keep same reference
 		if(!PlatformAudio.available()) {
 			return;
 		}
-		if(sound != null && categoryVolumes[SoundCategory.MASTER.getCategoryId()] > 0.0f) {
-			SoundEventAccessorComposite accessor = handler.getSound(sound.getSoundLocation());
+		if(sound != null && categoryVolumes[SoundSource.MASTER.getCategoryId()] > 0.0f) {
+			SoundEventAccessorComposite accessor = handler.getSoundEvent(sound.getSoundLocation());
 			if(accessor == null) {
 				logger.warn("Unable to play unknown soundEvent(1): {}", sound.getSoundLocation().toString());
 			}else {
-				SoundPoolEntry etr = accessor.cloneEntry();
-				if (etr == SoundHandler.missing_sound) {
-					logger.warn("Unable to play empty soundEvent(2): {}", etr.getSoundPoolEntryLocation().toString());
+				Sound etr = accessor.cloneEntry();
+				if (etr == SoundManager.missing_sound) {
+					logger.warn("Unable to play empty soundEvent(2): {}", etr.getSoundLocation().toString());
 				}else {
-					ResourceLocation lc = etr.getSoundPoolEntryLocation();
+					ResourceLocation lc = etr.getSoundLocation();
 					IAudioResource trk;
 					if(EagRuntime.getPlatformType() != EnumPlatformType.DESKTOP) {
 						trk = PlatformAudio.loadAudioDataNew(lc.toString(), !etr.isStreamingSound(), browserResourcePackLoader);
@@ -315,14 +315,14 @@ public class EaglercraftSoundManager {
 						logger.warn("Unable to play unknown soundEvent(3): {}", sound.getSoundLocation().toString());
 					}else {
 						
-						ActiveSoundEvent newSound = new ActiveSoundEvent(this, sound, accessor.getSoundCategory(), etr, null);
+						ActiveSoundEvent newSound = new ActiveSoundEvent(this, sound, accessor.getSoundSource(), etr, null);
 
 						float pitch = getNormalizedPitch(sound, etr);
-						float attenuatedGain = getNormalizedVolume(sound, etr, accessor.getSoundCategory());
+						float attenuatedGain = getNormalizedVolume(sound, etr, accessor.getSoundSource());
 						boolean repeat = sound.canRepeat();
 						
-						AttenuationType tp = sound.getAttenuationType();
-						if(tp == AttenuationType.LINEAR) {
+						SoundInstance.Attenuation tp = sound.getAttenuationType();
+						if(tp == SoundInstance.Attenuation.LINEAR) {
 							newSound.soundHandle = PlatformAudio.beginPlayback(trk, newSound.activeX, newSound.activeY,
 									newSound.activeZ, attenuatedGain, pitch, repeat);
 						}else {
@@ -340,32 +340,32 @@ public class EaglercraftSoundManager {
 		}
 	}
 	
-	public void playDelayedSound(ISound sound, int delay) {
+	public void playDelayedSound(SoundInstance sound, int delay) { // Keep same reference
 		queuedSounds.add(new WaitingSoundEvent(sound, delay));
 	}
 	
-	private float getNormalizedVolume(ISound sound, SoundPoolEntry entry, SoundCategory category) {
-		return (float) MathHelper.clamp_double((double) sound.getVolume() * entry.getVolume(), 0.0D, 1.0D)
-				* (category.getCategoryId() == SoundCategory.MASTER.getCategoryId() ? 1.0f
+	private float getNormalizedVolume(SoundInstance sound, Sound entry, SoundSource category) { // Keep same reference
+		return (float) Mth.clamp_double((double) sound.getVolume() * entry.getVolume(), 0.0D, 1.0D)
+				* (category.getCategoryId() == SoundSource.MASTER.getCategoryId() ? 1.0f
 						: categoryVolumes[category.getCategoryId()])
-				* categoryVolumes[SoundCategory.MASTER.getCategoryId()];
+				* categoryVolumes[SoundSource.MASTER.getCategoryId()];
 	}
 	
-	private float getNormalizedPitch(ISound sound, SoundPoolEntry entry) {
-		return MathHelper.clamp_float(sound.getPitch() * (float)entry.getPitch(), 0.5f, 2.0f);
+	private float getNormalizedPitch(SoundInstance sound, Sound entry) { // Keep same reference
+		return Mth.clamp_float(sound.getPitch() * (float)entry.getPitch(), 0.5f, 2.0f);
 	}
 	
-	public void setListener(EntityPlayer player, float partialTicks) {
+	public void setListener(Player player, float partialTicks) {
 		if(!PlatformAudio.available()) {
 			return;
 		}
 		if(player != null) {
 			try {
-				float f = player.prevRotationPitch + (player.rotationPitch - player.prevRotationPitch) * partialTicks;
-				float f1 = player.prevRotationYaw + (player.rotationYaw - player.prevRotationYaw) * partialTicks;
-				double d0 = player.prevPosX + (player.posX - player.prevPosX) * (double) partialTicks;
-				double d1 = player.prevPosY + (player.posY - player.prevPosY) * (double) partialTicks + (double) player.getEyeHeight();
-				double d2 = player.prevPosZ + (player.posZ - player.prevPosZ) * (double) partialTicks;
+				float f = player.prevRotationPitch + (player.getXRot() - player.prevRotationPitch) * partialTicks;
+				float f1 = player.prevRotationYaw + (player.getYRot() - player.prevRotationYaw) * partialTicks;
+				double d0 = player.prevPosX + (player.getX() - player.prevPosX) * (double) partialTicks;
+				double d1 = player.prevPosY + (player.getY() - player.prevPosY) * (double) partialTicks + (double) player.getEyeHeight();
+				double d2 = player.prevPosZ + (player.getZ() - player.prevPosZ) * (double) partialTicks;
 				PlatformAudio.setListener((float)d0, (float)d1, (float)d2, f, f1);
 			}catch(Throwable t) {
 				// eaglercraft 1.5.2 had Infinity/NaN crashes for this function which

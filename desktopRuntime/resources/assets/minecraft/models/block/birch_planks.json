@@ -1,6 +1,6 @@
 {
-    "parent": "block/cube_all",
-    "textures": {
-        "all": "blocks/planks_birch"
-    }
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "minecraft:block/birch_planks"
+  }
 }

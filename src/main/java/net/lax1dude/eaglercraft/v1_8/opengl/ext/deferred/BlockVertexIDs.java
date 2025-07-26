@@ -24,12 +24,12 @@ import com.carrotsearch.hppc.ObjectIntMap;
 
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 
-public class BlockVertexIDs implements IResourceManagerReloadListener {
+public class BlockVertexIDs implements ResourceManagerReloadListener {
 
 	private static final Logger logger = LogManager.getLogger("BlockVertexIDsCSV");
 
@@ -39,9 +39,9 @@ public class BlockVertexIDs implements IResourceManagerReloadListener {
 	public static int builtin_water_flow_vertex_id = 0;
 
 	@Override
-	public void onResourceManagerReload(IResourceManager var1) {
+	public void onResourceManagerReload(ResourceManager var1) {
 		try {
-			IResource itemsCsv = var1.getResource(new ResourceLocation("eagler:glsl/deferred/vertex_ids.csv"));
+			Resource itemsCsv = var1.getResource(new ResourceLocation("eagler:glsl/deferred/vertex_ids.csv")).orElseThrow();
 			try (BufferedReader reader = new BufferedReader(
 					new InputStreamReader(itemsCsv.getInputStream(), StandardCharsets.UTF_8))) {
 				modelToID.clear();

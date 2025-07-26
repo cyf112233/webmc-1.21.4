@@ -18,7 +18,7 @@ package net.lax1dude.eaglercraft.v1_8.notifications;
 
 import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
 import net.lax1dude.eaglercraft.v1_8.profile.EaglerSkinTexture;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class NotificationIcon {
 

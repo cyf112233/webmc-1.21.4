@@ -16,12 +16,12 @@
 
 package net.lax1dude.eaglercraft.v1_8.profile;
 
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.EditBox;
 
-public class GuiPasswordTextField extends GuiTextField {
+public class GuiPasswordTextField extends EditBox {
 
-	public GuiPasswordTextField(int componentId, FontRenderer fontrendererObj, int x, int y, int par5Width,
+	public GuiPasswordTextField(int componentId, Font fontrendererObj, int x, int y, int par5Width,
 			int par6Height) {
 		super(componentId, fontrendererObj, x, y, par5Width, par6Height);
 	}

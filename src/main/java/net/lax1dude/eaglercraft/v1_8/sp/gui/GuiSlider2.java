@@ -18,9 +18,9 @@ package net.lax1dude.eaglercraft.v1_8.sp.gui;
 
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.components.Button;
 
-public class GuiSlider2 extends GuiButton {
+public class GuiSlider2 extends Button {
 	/** The value of this slider control. */
 	public float sliderValue = 1.0F;
 	public float sliderMax = 1.0F;

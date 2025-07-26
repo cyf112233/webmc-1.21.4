@@ -1,8 +1,7 @@
 {
-    "parent": "block/farmland",
-    "textures": {
-        "particle": "blocks/dirt",
-        "dirt": "blocks/dirt",
-        "top": "blocks/farmland_wet"
-    }
+  "parent": "minecraft:block/template_farmland",
+  "textures": {
+    "dirt": "minecraft:block/dirt",
+    "top": "minecraft:block/farmland_moist"
+  }
 }

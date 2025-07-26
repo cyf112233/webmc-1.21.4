@@ -75,7 +75,7 @@ public class RelayUpdateChecker {
 		}
 		long millis = System.currentTimeMillis();
 		Minecraft mc = Minecraft.getMinecraft();
-		if ((mc.theWorld == null || mc.isSingleplayer())
+		if ((mc.theLevel == null || mc.isSingleplayer())
 				&& (millis - lastUpdateCheck > updateCheckRate || millis + 60000l < lastUpdateCheck)) {
 			lastUpdateCheck = millis;
 			try {

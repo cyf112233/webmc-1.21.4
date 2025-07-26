@@ -34,28 +34,41 @@ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.sp.SingleplayerServerController;
 import net.lax1dude.eaglercraft.v1_8.sp.ipc.*;
-import net.minecraft.network.EnumConnectionState;
-import net.minecraft.server.network.NetHandlerLoginServer;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ReportedException;
-import net.minecraft.util.StringTranslate;
-import net.minecraft.world.EnumDifficulty;
-import net.minecraft.world.WorldSettings;
-import net.minecraft.world.WorldSettings.GameType;
-import net.minecraft.world.WorldType;
-import net.lax1dude.eaglercraft.v1_8.sp.server.export.WorldConverterEPK;
-import net.lax1dude.eaglercraft.v1_8.sp.server.export.WorldConverterMCA;
+//import net.minecraft.server.network.NetHandlerLoginServer;
+import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.server.level.ServerPlayer; // MCP Reborn 1.21.4 package
+import net.minecraft.server.players.PlayerList; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.dimension.DimensionType; // MCP Reborn 1.21.4 package
+import net.minecraft.server.network.ServerLoginPacketListenerImpl;
+import net.minecraft.network.chat.Component;
+import net.minecraft.CrashReport;
+import net.minecraft.locale.Language;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.storage.LevelStorageSource;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.GameType; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.levelgen.WorldGenSettings; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.storage.LevelData; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.storage.LevelVersion; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.LevelSettings; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.Level; // MCP Reborn 1.21.4 package
+import net.lax1dude.eaglercraft.v1_8.sp.server.export.LevelConverterEPK;
+import net.lax1dude.eaglercraft.v1_8.sp.server.export.LevelConverterMCA;
 import net.lax1dude.eaglercraft.v1_8.sp.server.internal.ServerPlatformSingleplayer;
 import net.lax1dude.eaglercraft.v1_8.sp.server.socket.IntegratedServerPlayerNetworkManager;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer; // MCP Reborn 1.21.4 package
+import net.minecraft.server.level.ServerLevel; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.levelgen.WorldGenSettings; // MCP Reborn 1.21.4 package
+import net.minecraft.world.level.storage.LevelStorageSource; // MCP Reborn 1.21.4 package
 
 public class EaglerIntegratedServerWorker {
 
 	public static final Logger logger = LogManager.getLogger("EaglerIntegratedServer");
 
 	private static EaglerMinecraftServer currentProcess = null;
-	private static WorldSettings newWorldSettings = null;
+	private static LevelSettings newLevelSettings = null;
 
 	public static final EaglerSaveFormat saveFormat = new EaglerSaveFormat(EaglerSaveFormat.worldsFolder);
 
@@ -91,7 +104,7 @@ public class EaglerIntegratedServerWorker {
 				&& !isServerStopped()) {
 			logger.info("Autosaving worlds because the tab is about to close!");
 			currentProcess.getConfigurationManager().saveAllPlayerData();
-			currentProcess.saveAllWorlds(false);
+			currentProcess.saveAllLevels(false);
 		}
 	}
 
@@ -113,7 +126,7 @@ public class EaglerIntegratedServerWorker {
 	public static void closeChannel(String channel) {
 		IntegratedServerPlayerNetworkManager netmanager = openChannels.remove(channel);
 		if(netmanager != null) {
-			netmanager.closeChannel(new ChatComponentText("End of stream"));
+			netmanager.closeChannel(new Component("End of stream"));
 			sendIPCPacket(new IPCPacket0CPlayerChannel(channel, false));
 		}
 	}
@@ -128,7 +141,7 @@ public class EaglerIntegratedServerWorker {
 			return;
 		}
 		IntegratedServerPlayerNetworkManager networkmanager = new IntegratedServerPlayerNetworkManager(channel);
-		networkmanager.setConnectionState(EnumConnectionState.LOGIN);
+		networkmanager.setConnectionState(ConnectionProtocol.LOGIN);
 		networkmanager.setNetHandler(new NetHandlerLoginServer(currentProcess, networkmanager));
 		openChannels.put(channel, networkmanager);
 	}
@@ -144,8 +157,8 @@ public class EaglerIntegratedServerWorker {
 					currentProcess.stopServer();
 				}
 				
-				currentProcess = new EaglerMinecraftServer(pkt.worldName, pkt.ownerName, pkt.initialViewDistance, newWorldSettings, pkt.demoMode);
-				currentProcess.setBaseServerProperties(EnumDifficulty.getDifficultyEnum(pkt.initialDifficulty), newWorldSettings == null ? GameType.SURVIVAL : newWorldSettings.getGameType());
+				currentProcess = new EaglerMinecraftServer(pkt.worldName, pkt.ownerName, pkt.initialViewDistance, newLevelSettings, pkt.demoMode);
+				currentProcess.setBaseServerProperties(Difficulty.getDifficultyEnum(pkt.initialDifficulty), newLevelSettings == null ? GameType.SURVIVAL : newLevelSettings.getGameType());
 				currentProcess.startServer();
 				
 				String[] worlds = EaglerSaveFormat.worldsList.getAllLines();
@@ -181,95 +194,95 @@ public class EaglerIntegratedServerWorker {
 				sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket01StopServer.ID));
 				break;
 			}
-			case IPCPacket02InitWorld.ID: {
+			case IPCPacket02InitLevel.ID: {
 				tryStopServer();
-				IPCPacket02InitWorld pkt = (IPCPacket02InitWorld)ipc;
-				newWorldSettings = new WorldSettings(pkt.seed, GameType.getByID(pkt.gamemode), pkt.structures,
-						pkt.hardcore, WorldType.worldTypes[pkt.worldType]);
-				newWorldSettings.setWorldName(pkt.worldArgs); // "setWorldName" is actually for setting generator arguments, MCP fucked up
+				IPCPacket02InitLevel pkt = (IPCPacket02InitLevel)ipc;
+				newLevelSettings = new LevelSettings(pkt.seed, GameType.getByID(pkt.gamemode), pkt.structures,
+						pkt.hardcore, LevelType.worldTypes[pkt.worldType]);
+				newLevelSettings.setLevelName(pkt.worldArgs); // "setLevelName" is actually for setting generator arguments, MCP fucked up
 				if(pkt.bonusChest) {
-					newWorldSettings.enableBonusChest();
+					newLevelSettings.enableBonusChest();
 				}
 				if(pkt.cheats) {
-					newWorldSettings.enableCommands();
+					newLevelSettings.enableCommands();
 				}
 				break;
 			}
-			case IPCPacket03DeleteWorld.ID: {
+			case IPCPacket03DeleteLevel.ID: {
 				tryStopServer();
-				IPCPacket03DeleteWorld pkt = (IPCPacket03DeleteWorld)ipc;
-				if(!saveFormat.deleteWorldDirectory(pkt.worldName)) {
+				IPCPacket03DeleteLevel pkt = (IPCPacket03DeleteLevel)ipc;
+				if(!saveFormat.deleteLevelDirectory(pkt.worldName)) {
 					sendTaskFailed();
 					break;
 				}
 				String[] worldsTxt = EaglerSaveFormat.worldsList.getAllLines();
 				if(worldsTxt != null) {
-					List<String> newWorlds = new ArrayList<>();
+					List<String> newLevels = new ArrayList<>();
 					for(int i = 0; i < worldsTxt.length; ++i) {
 						String str = worldsTxt[i];
 						if(!str.equalsIgnoreCase(pkt.worldName)) {
-							newWorlds.add(str);
+							newLevels.add(str);
 						}
 					}
-					EaglerSaveFormat.worldsList.setAllChars(String.join("\n", newWorlds));
+					EaglerSaveFormat.worldsList.setAllChars(String.join("\n", newLevels));
 				}
-				sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket03DeleteWorld.ID));
+				sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket03DeleteLevel.ID));
 				break;
 			}
 			case IPCPacket05RequestData.ID: {
 				tryStopServer();
 				IPCPacket05RequestData pkt = (IPCPacket05RequestData)ipc;
 				if(pkt.request == IPCPacket05RequestData.REQUEST_LEVEL_EAG) {
-					sendIPCPacket(new IPCPacket09RequestResponse(WorldConverterEPK.exportWorld(pkt.worldName)));
+					sendIPCPacket(new IPCPacket09RequestResponse(LevelConverterEPK.exportLevel(pkt.worldName)));
 				}else if(pkt.request == IPCPacket05RequestData.REQUEST_LEVEL_MCA) {
-					sendIPCPacket(new IPCPacket09RequestResponse(WorldConverterMCA.exportWorld(pkt.worldName)));
+					sendIPCPacket(new IPCPacket09RequestResponse(LevelConverterMCA.exportLevel(pkt.worldName)));
 				}else {
 					logger.error("Unknown IPCPacket05RequestData type {}", ((int)pkt.request & 0xFF));
 					sendTaskFailed();
 				}
 				break;
 			}
-			case IPCPacket06RenameWorldNBT.ID: {
+			case IPCPacket06RenameLevelNBT.ID: {
 				tryStopServer();
-				IPCPacket06RenameWorldNBT pkt = (IPCPacket06RenameWorldNBT)ipc;
+				IPCPacket06RenameLevelNBT pkt = (IPCPacket06RenameLevelNBT)ipc;
 				boolean b = false;
 				if(pkt.duplicate) {
-					b = saveFormat.duplicateWorld(pkt.worldName, pkt.displayName);
+					b = saveFormat.duplicateLevel(pkt.worldName, pkt.displayName);
 				}else {
-					b = saveFormat.renameWorld(pkt.worldName, pkt.displayName);
+					b = saveFormat.renameLevel(pkt.worldName, pkt.displayName);
 				}
 				if(!b) {
 					sendTaskFailed();
 					break;
 				}
-				sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket06RenameWorldNBT.ID));
+				sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket06RenameLevelNBT.ID));
 				break;
 			}
-			case IPCPacket07ImportWorld.ID: {
+			case IPCPacket07ImportLevel.ID: {
 				tryStopServer();
-				IPCPacket07ImportWorld pkt = (IPCPacket07ImportWorld)ipc;
+				IPCPacket07ImportLevel pkt = (IPCPacket07ImportLevel)ipc;
 				try {
-					if(pkt.worldFormat == IPCPacket07ImportWorld.WORLD_FORMAT_EAG) {
-						WorldConverterEPK.importWorld(pkt.worldData, pkt.worldName);
-					}else if(pkt.worldFormat == IPCPacket07ImportWorld.WORLD_FORMAT_MCA) {
-						WorldConverterMCA.importWorld(pkt.worldData, pkt.worldName, pkt.gameRules);
+					if(pkt.worldFormat == IPCPacket07ImportLevel.WORLD_FORMAT_EAG) {
+						LevelConverterEPK.importLevel(pkt.worldData, pkt.worldName);
+					}else if(pkt.worldFormat == IPCPacket07ImportLevel.WORLD_FORMAT_MCA) {
+						LevelConverterMCA.importLevel(pkt.worldData, pkt.worldName, pkt.gameRules);
 					}else {
 						throw new IOException("Client requested an unsupported export format!");
 					}
-					sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket07ImportWorld.ID));
+					sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket07ImportLevel.ID));
 				}catch(IOException ex) {
 					sendIPCPacket(new IPCPacket15Crashed("COULD NOT IMPORT WORLD \"" + pkt.worldName + "\"!!!\n\n" + EagRuntime.getStackTrace(ex) + "\n\nFile is probably corrupt, try a different world"));
 					sendTaskFailed();
 				}
 				break;
 			}
-			case IPCPacket0ASetWorldDifficulty.ID: {
-				IPCPacket0ASetWorldDifficulty pkt = (IPCPacket0ASetWorldDifficulty)ipc;
+			case IPCPacket0ASetLevelDifficulty.ID: {
+				IPCPacket0ASetLevelDifficulty pkt = (IPCPacket0ASetLevelDifficulty)ipc;
 				if(!isServerStopped()) {
 					if(pkt.difficulty == (byte)-1) {
-						currentProcess.setDifficultyLockedForAllWorlds(true);
+						currentProcess.setDifficultyLockedForAllLevels(true);
 					}else {
-						currentProcess.setDifficultyForAllWorlds(EnumDifficulty.getDifficultyEnum(pkt.difficulty));
+						currentProcess.setDifficultyForAllLevels(Difficulty.getDifficultyEnum(pkt.difficulty));
 					}
 				}else {
 					logger.warn("Client tried to set difficulty while server was stopped");
@@ -300,8 +313,8 @@ public class EaglerIntegratedServerWorker {
 				}
 				break;
 			}
-			case IPCPacket0EListWorlds.ID: {
-				IPCPacket0EListWorlds pkt = (IPCPacket0EListWorlds)ipc;
+			case IPCPacket0EListLevels.ID: {
+				IPCPacket0EListLevels pkt = (IPCPacket0EListLevels)ipc;
 				if(!isServerStopped()) {
 					logger.error("Client tried to list worlds while server was running");
 					sendTaskFailed();
@@ -312,19 +325,19 @@ public class EaglerIntegratedServerWorker {
 						break;
 					}
 					LinkedHashSet<String> updatedList = new LinkedHashSet<>();
-					LinkedList<NBTTagCompound> sendListNBT = new LinkedList<>();
+					LinkedList<CompoundTag> sendListNBT = new LinkedList<>();
 					boolean rewrite = false;
 					for(int i = 0; i < worlds.length; ++i) {
 						String w = worlds[i].trim();
 						if(w.length() > 0) {
-							VFile2 vf = WorldsDB.newVFile(EaglerSaveFormat.worldsFolder, w, "level.dat");
+							VFile2 vf = LevelsDB.newVFile(EaglerSaveFormat.worldsFolder, w, "level.dat");
 							if(!vf.exists()) {
-								vf = WorldsDB.newVFile(EaglerSaveFormat.worldsFolder, w, "level.dat_old");
+								vf = LevelsDB.newVFile(EaglerSaveFormat.worldsFolder, w, "level.dat_old");
 							}
 							if(vf.exists()) {
 								try(InputStream dat = vf.getInputStream()) {
 									if(updatedList.add(w)) {
-										NBTTagCompound worldDatNBT = CompressedStreamTools.readCompressed(dat);
+										CompoundTag worldDatNBT = NbtIo.readCompressed(dat);
 										worldDatNBT.setString("folderNameEagler", w);
 										sendListNBT.add(worldDatNBT);
 									}else {
@@ -336,8 +349,8 @@ public class EaglerIntegratedServerWorker {
 								}
 							}
 							rewrite = true;
-							logger.error("World level.dat for '{}' was not found, attempting to delete", w);
-							if(!saveFormat.deleteWorldDirectory(w)) {
+							logger.error("Level level.dat for '{}' was not found, attempting to delete", w);
+							if(!saveFormat.deleteLevelDirectory(w)) {
 								logger.error("Failed to delete '{}'! It will be removed from the worlds list anyway", w);
 							}
 						}else {
@@ -355,7 +368,7 @@ public class EaglerIntegratedServerWorker {
 				IPCPacket14StringList pkt = (IPCPacket14StringList)ipc;
 				switch(pkt.opCode) {
 				case IPCPacket14StringList.LOCALE:
-					StringTranslate.initServer(pkt.stringList);
+					Language.initServer(pkt.stringList);
 					break;
 				//case IPCPacket14StringList.STAT_GUID:
 				//	AchievementMap.init(pkt.stringList);
@@ -390,7 +403,7 @@ public class EaglerIntegratedServerWorker {
 			case IPCPacket19Autosave.ID: {
 				if(!isServerStopped()) {
 					currentProcess.getConfigurationManager().saveAllPlayerData();
-					currentProcess.saveAllWorlds(false);
+					currentProcess.saveAllLevels(false);
 					sendIPCPacket(new IPCPacketFFProcessKeepAlive(IPCPacket19Autosave.ID));
 				}else {
 					logger.error("Client tried to autosave while server was stopped");
@@ -485,7 +498,7 @@ public class EaglerIntegratedServerWorker {
 			currentProcess = null;
 			logger.info("Starting EaglercraftX integrated server worker...");
 			
-			if(ServerPlatformSingleplayer.getWorldsDatabase().isRamdisk()) {
+			if(ServerPlatformSingleplayer.getLevelsDatabase().isRamdisk()) {
 				sendIPCPacket(new IPCPacket1CIssueDetected(IPCPacket1CIssueDetected.ISSUE_RAMDISK_MODE));
 			}
 			
@@ -499,8 +512,8 @@ public class EaglerIntegratedServerWorker {
 				ServerPlatformSingleplayer.immediateContinue();
 			}
 		}catch(Throwable tt) {
-			if(tt instanceof ReportedException) {
-				String fullReport = ((ReportedException)tt).getCrashReport().getCompleteReport();
+			if(tt instanceof CrashReport) {
+				String fullReport = ((CrashReport)tt).getCrashReport().getCompleteReport();
 				logger.error(fullReport);
 				sendIPCPacket(new IPCPacket15Crashed(fullReport));
 			}else {
@@ -524,7 +537,7 @@ public class EaglerIntegratedServerWorker {
 
 	public static void singleThreadMain() {
 		logger.info("Starting EaglercraftX integrated server worker...");
-		if(ServerPlatformSingleplayer.getWorldsDatabase().isRamdisk()) {
+		if(ServerPlatformSingleplayer.getLevelsDatabase().isRamdisk()) {
 			sendIPCPacket(new IPCPacket1CIssueDetected(IPCPacket1CIssueDetected.ISSUE_RAMDISK_MODE));
 		}
 		sendIPCPacket(new IPCPacketFFProcessKeepAlive(0xFF));

@@ -19,14 +19,14 @@ package net.lax1dude.eaglercraft.v1_8.minecraft;
 import java.io.IOException;
 
 import net.lax1dude.eaglercraft.v1_8.internal.IFramebufferGL;
+import net.lax1dude.eaglercraft.v1_8.internal.ITextureGL;
 import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.server.packs.resources.ResourceManager;
 
-import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
 
 public class MainMenuSkyboxTexture extends AbstractTexture {
 
@@ -34,36 +34,41 @@ public class MainMenuSkyboxTexture extends AbstractTexture {
 	public static final int _GL_COLOR_ATTACHMENT0 = 0x8CE0;
 
 	private IFramebufferGL framebuffer = null;
+	private int textureId = -1;
 
 	public MainMenuSkyboxTexture(int width, int height) {
-		TextureUtil.allocateTexture(this.getGlTextureId(), width, height);
+		this.textureId = GlStateManager.generateTexture();
+		GlStateManager.bindTexture(textureId);
 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		EaglercraftGPU.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer)null);
 	}
 
 	@Override
-	public void loadTexture(IResourceManager var1) throws IOException {
+	public void loadTexture(ResourceManager var1) throws IOException {
 	}
 
 	public void bindFramebuffer() {
 		if(framebuffer == null) {
 			framebuffer = _wglCreateFramebuffer();
 			_wglBindFramebuffer(_GL_FRAMEBUFFER, framebuffer);
-			int tex = getGlTextureId();
-			GlStateManager.bindTexture(tex);
-			_wglFramebufferTexture2D(_GL_FRAMEBUFFER, _GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-					EaglercraftGPU.getNativeTexture(tex), 0);
-		}else {
+			GlStateManager.bindTexture(textureId);
+			ITextureGL tex = EaglercraftGPU.mapTexturesGL.get(textureId);
+			_wglFramebufferTexture2D(_GL_FRAMEBUFFER, _GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+		} else {
 			_wglBindFramebuffer(_GL_FRAMEBUFFER, framebuffer);
 		}
 		_wglDrawBuffers(new int[] { _GL_COLOR_ATTACHMENT0 });
 	}
 
 	public void deleteGlTexture() {
-		super.deleteGlTexture();
-		if(framebuffer != null) {
+		if (textureId != -1) {
+			GlStateManager.deleteTexture(textureId);
+			textureId = -1;
+		}
+		if (framebuffer != null) {
 			_wglDeleteFramebuffer(framebuffer);
 			framebuffer = null;
 		}

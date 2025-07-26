@@ -23,12 +23,12 @@ import java.util.Set;
 
 import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
 import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.lax1dude.eaglercraft.v1_8.opengl.WorldRenderer;
+import net.lax1dude.eaglercraft.v1_8.opengl.LevelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityOtherPlayerMP;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.resources.ResourceLocation;
 
 public class VoiceTagRenderer {
 
@@ -36,7 +36,7 @@ public class VoiceTagRenderer {
 
 	private static final Set<EaglercraftUUID> voiceTagsDrawnThisFrame = new HashSet<>();
 
-	public static void renderVoiceNameTag(Minecraft mc, EntityOtherPlayerMP player, int offset) {
+	public static void renderVoiceNameTag(Minecraft mc, Player player, int offset) {
 		EaglercraftUUID uuid = player.getUniqueID();
 		boolean mute = VoiceClientController.getVoiceMuted().contains(uuid);
 		if((mute || VoiceClientController.getVoiceSpeaking().contains(uuid)) && voiceTagsDrawnThisFrame.add(uuid)) {
@@ -52,8 +52,8 @@ public class VoiceTagRenderer {
 
 			GlStateManager.scale(16.0f, 16.0f, 16.0f);
 
-			Tessellator tessellator = Tessellator.getInstance();
-			WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+			Tesselator tessellator = Tesselator.getInstance();
+			LevelRenderer worldrenderer = tessellator.getLevelRenderer();
 			worldrenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
 			float a = 0.25F;
 			worldrenderer.pos(-0.02, -0.02, 0.0).color(0.0F, 0.0F, 0.0F, a).endVertex();

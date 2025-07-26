@@ -1,8 +1,16 @@
 {
-    "variants": {
-        "axis=y":  { "model": "dark_oak_log" },
-        "axis=z":   { "model": "dark_oak_log_side" },
-        "axis=x":   { "model": "dark_oak_log_side", "y": 90 },
-        "axis=none": { "model": "dark_oak_bark" }
+  "variants": {
+    "axis=x": {
+      "model": "minecraft:block/dark_oak_log_horizontal",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "minecraft:block/dark_oak_log"
+    },
+    "axis=z": {
+      "model": "minecraft:block/dark_oak_log_horizontal",
+      "x": 90
     }
+  }
 }

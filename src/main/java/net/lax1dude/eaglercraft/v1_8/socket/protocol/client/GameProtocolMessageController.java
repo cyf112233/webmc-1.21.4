@@ -32,9 +32,12 @@ import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessageHandler;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessagePacket;
 import net.lax1dude.eaglercraft.v1_8.sp.server.socket.protocol.ServerV3MessageHandler;
 import net.lax1dude.eaglercraft.v1_8.sp.server.socket.protocol.ServerV4MessageHandler;
-import net.minecraft.client.network.NetHandlerPlayClient;
-import net.minecraft.network.NetHandlerPlayServer;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.network.FriendlyByteBuf;
+import net.lax1dude.eaglercraft.v1_8.netty.UnpooledByteBufAllocator;
+// Using fully qualified name for Unpooled to avoid import conflict
+import io.netty.buffer.ByteBuf;
 
 public class GameProtocolMessageController {
 
@@ -43,11 +46,11 @@ public class GameProtocolMessageController {
 	public final GamePluginMessageProtocol protocol;
 	public final int sendDirection;
 	public final int receiveDirection;
-	private final PacketBufferInputWrapper inputStream = new PacketBufferInputWrapper(null);
-	private final PacketBufferOutputWrapper outputStream = new PacketBufferOutputWrapper(null);
+	private final UnpooledByteBufAllocator.FriendlyByteBufInputWrapper inputStream = UnpooledByteBufAllocator.newInputWrapper(io.netty.buffer.Unpooled.buffer());
+	private final UnpooledByteBufAllocator.FriendlyByteBufOutputWrapper outputStream = UnpooledByteBufAllocator.newOutputWrapper(io.netty.buffer.Unpooled.buffer());
 	private final GameMessageHandler handler;
 	private final IPluginMessageSendFunction sendFunction;
-	private final List<PacketBuffer> sendQueueV4;
+	private final List<io.netty.buffer.ByteBuf> sendQueueV4;
 	private final boolean noDelay;
 
 	public GameProtocolMessageController(GamePluginMessageProtocol protocol, int sendDirection, GameMessageHandler handler,
@@ -61,7 +64,7 @@ public class GameProtocolMessageController {
 		this.sendQueueV4 = !noDelay ? new LinkedList<>() : null;
 	}
 
-	public boolean handlePacket(String channel, PacketBuffer data) throws IOException {
+	public boolean handlePacket(String channel, io.netty.buffer.ByteBuf data) throws IOException {
 		GameMessagePacket pkt;
 		if(protocol.ver >= 4 && data.readableBytes() > 0 && data.getByte(data.readerIndex()) == (byte) 0xFF
 				&& channel.equals(GamePluginMessageConstants.V4_CHANNEL)) {
@@ -120,7 +123,7 @@ public class GameProtocolMessageController {
 
 	public void sendPacket(GameMessagePacket packet) throws IOException {
 		int len = packet.length() + 1;
-		PacketBuffer buf = new PacketBuffer(len != 0 ? Unpooled.buffer(len) : Unpooled.buffer(64));
+		io.netty.buffer.ByteBuf buf = len != 0 ? Unpooled.buffer(len) : Unpooled.buffer(64);
 		outputStream.buffer = buf;
 		String chan = protocol.writePacket(sendDirection, outputStream, packet);
 		outputStream.buffer = null;
@@ -139,7 +142,7 @@ public class GameProtocolMessageController {
 	public void flush() {
 		if(sendQueueV4 != null) {
 			int queueLen = sendQueueV4.size();
-			PacketBuffer pkt;
+			io.netty.buffer.ByteBuf pkt;
 			if(queueLen == 0) {
 				return;
 			}else if(queueLen == 1) {
@@ -147,11 +150,11 @@ public class GameProtocolMessageController {
 				sendFunction.sendPluginMessage(GamePluginMessageConstants.V4_CHANNEL, pkt);
 			}else {
 				int i, j, sendCount, totalLen, lastLen;
-				PacketBuffer sendBuffer;
+				io.netty.buffer.ByteBuf sendBuffer;
 				while(sendQueueV4.size() > 0) {
 					sendCount = 0;
 					totalLen = 0;
-					Iterator<PacketBuffer> itr = sendQueueV4.iterator();
+					Iterator<io.netty.buffer.ByteBuf> itr = sendQueueV4.iterator();
 					do {
 						i = itr.next().readableBytes();
 						lastLen = GamePacketOutputBuffer.getVarIntSize(i) + i;
@@ -167,7 +170,7 @@ public class GameProtocolMessageController {
 						sendFunction.sendPluginMessage(GamePluginMessageConstants.V4_CHANNEL, pkt);
 						continue;
 					}
-					sendBuffer = new PacketBuffer(Unpooled.buffer(1 + totalLen + GamePacketOutputBuffer.getVarIntSize(sendCount))); 
+					sendBuffer = Unpooled.buffer(1 + totalLen + GamePacketOutputBuffer.getVarIntSize(sendCount)); 
 					sendBuffer.writeByte(0xFF);
 					sendBuffer.writeVarIntToBuffer(sendCount);
 					for(j = 0; j < sendCount; ++j) {
@@ -181,7 +184,7 @@ public class GameProtocolMessageController {
 		}
 	}
 
-	public static GameMessageHandler createClientHandler(int protocolVersion, NetHandlerPlayClient netHandler) {
+	public static GameMessageHandler createClientHandler(int protocolVersion, ClientPacketListener netHandler) {
 		switch(protocolVersion) {
 		case 2:
 		case 3:
@@ -189,11 +192,11 @@ public class GameProtocolMessageController {
 		case 4:
 			return new ClientV4MessageHandler(netHandler);
 		default:
-			throw new IllegalArgumentException("Unknown protocol verison: " + protocolVersion);
+			throw new IllegalArgumentException("Unknown protocol version: " + protocolVersion);
 		}
 	}
 
-	public static GameMessageHandler createServerHandler(int protocolVersion, NetHandlerPlayServer netHandler) {
+	public static GameMessageHandler createServerHandler(int protocolVersion, ServerGamePacketListenerImpl netHandler) {
 		switch(protocolVersion) {
 		case 2:
 		case 3:
@@ -201,7 +204,7 @@ public class GameProtocolMessageController {
 		case 4:
 			return new ServerV4MessageHandler(netHandler);
 		default:
-			throw new IllegalArgumentException("Unknown protocol verison: " + protocolVersion);
+			throw new IllegalArgumentException("Unknown protocol version: " + protocolVersion);
 		}
 	}
 }

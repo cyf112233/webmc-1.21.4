@@ -43,7 +43,7 @@ public interface IClientConfigAdapter {
 
 	String getServerToJoin();
 
-	String getWorldsDB();
+	String getLevelsDB();
 
 	String getResourcePacksDB();
 

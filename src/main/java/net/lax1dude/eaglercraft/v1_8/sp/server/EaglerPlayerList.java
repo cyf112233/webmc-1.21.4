@@ -16,33 +16,44 @@
 
 package net.lax1dude.eaglercraft.v1_8.sp.server;
 
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.ServerConfigurationManager;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.players.PlayerList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.GameType; // MCP Reborn 1.21.4 package
 
-public class EaglerPlayerList extends ServerConfigurationManager {
+public class EaglerPlayerList extends PlayerList {
 	
-	private NBTTagCompound hostPlayerNBT = null;
+	private CompoundTag hostPlayerNBT = null;
 
 	public EaglerPlayerList(MinecraftServer par1MinecraftServer, int viewDistance) {
 		super(par1MinecraftServer);
 		this.viewDistance = viewDistance;
 	}
 
-	protected void writePlayerData(EntityPlayerMP par1EntityPlayerMP) {
-		if (par1EntityPlayerMP.getName().equals(this.getServerInstance().getServerOwner())) {
-			this.hostPlayerNBT = new NBTTagCompound();
-			par1EntityPlayerMP.writeToNBT(hostPlayerNBT);
+	protected void writePlayerData(ServerPlayer par1ServerPlayer) {
+		if (par1ServerPlayer.getName().equals(this.getServerInstance().getServerOwner())) {
+			this.hostPlayerNBT = new CompoundTag();
+			par1ServerPlayer.writeToNBT(hostPlayerNBT);
 		}
-		super.writePlayerData(par1EntityPlayerMP);
+		super.writePlayerData(par1ServerPlayer);
 	}
 	
-	public NBTTagCompound getHostPlayerData() {
+	public CompoundTag getHostPlayerData() {
 		return this.hostPlayerNBT;
 	}
 
-	public void playerLoggedOut(EntityPlayerMP playerIn) {
+	@Override
+	public GameType getGameType() {
+		return ((EaglerMinecraftServer)this.getServerInstance()).getGameType();
+	}
+
+	@Override
+	public void setGameType(GameType type) {
+		((EaglerMinecraftServer)this.getServerInstance()).setGameType(type);
+	}
+
+	public void playerLoggedOut(ServerPlayer playerIn) {
 		super.playerLoggedOut(playerIn);
 		EaglerMinecraftServer svr = (EaglerMinecraftServer)getServerInstance();
 		svr.skinService.unregisterPlayer(playerIn.getUniqueID());

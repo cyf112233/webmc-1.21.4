@@ -1,161 +1,178 @@
 package net.minecraft.client.resources.model;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+import java.util.EnumMap;
 import java.util.List;
-
-import com.google.common.collect.Lists;
-
-import net.lax1dude.eaglercraft.v1_8.minecraft.EaglerTextureAtlasSprite;
+import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.block.model.BreakingFour;
-import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
-import net.minecraft.client.renderer.block.model.ModelBlock;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.client.renderer.block.model.BlockElement;
+import net.minecraft.client.renderer.block.model.BlockElementFace;
+import net.minecraft.client.renderer.block.model.FaceBakery;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.renderer.block.model.TextureSlots;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
-/**+
- * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
- * 
- * Minecraft 1.8.8 bytecode is (c) 2015 Mojang AB. "Do not distribute!"
- * Mod Coder Pack v9.18 deobfuscation configs are (c) Copyright by the MCP Team
- * 
- * EaglercraftX 1.8 patch files (c) 2022-2025 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public class SimpleBakedModel implements IBakedModel {
-	protected final List<BakedQuad> generalQuads;
-	protected final List<List<BakedQuad>> faceQuads;
-	protected final boolean ambientOcclusion;
-	protected final boolean gui3d;
-	protected final EaglerTextureAtlasSprite texture;
-	protected final ItemCameraTransforms cameraTransforms;
+@OnlyIn(Dist.CLIENT)
+public class SimpleBakedModel implements BakedModel {
+    public static final String PARTICLE_TEXTURE_REFERENCE = "particle";
+    private final List<BakedQuad> unculledFaces;
+    private final Map<Direction, List<BakedQuad>> culledFaces;
+    private final boolean hasAmbientOcclusion;
+    private final boolean isGui3d;
+    private final boolean usesBlockLight;
+    private final TextureAtlasSprite particleIcon;
+    private final ItemTransforms transforms;
 
-	public SimpleBakedModel(List<BakedQuad> parList, List<List<BakedQuad>> parList2, boolean parFlag, boolean parFlag2,
-			EaglerTextureAtlasSprite parTextureAtlasSprite, ItemCameraTransforms parItemCameraTransforms) {
-		this.generalQuads = parList;
-		this.faceQuads = parList2;
-		this.ambientOcclusion = parFlag;
-		this.gui3d = parFlag2;
-		this.texture = parTextureAtlasSprite;
-		this.cameraTransforms = parItemCameraTransforms;
-	}
+    public SimpleBakedModel(
+        List<BakedQuad> p_119489_,
+        Map<Direction, List<BakedQuad>> p_119490_,
+        boolean p_119491_,
+        boolean p_119492_,
+        boolean p_119493_,
+        TextureAtlasSprite p_119494_,
+        ItemTransforms p_119495_
+    ) {
+        this.unculledFaces = p_119489_;
+        this.culledFaces = p_119490_;
+        this.hasAmbientOcclusion = p_119491_;
+        this.isGui3d = p_119493_;
+        this.usesBlockLight = p_119492_;
+        this.particleIcon = p_119494_;
+        this.transforms = p_119495_;
+    }
 
-	public List<BakedQuad> getFaceQuads(EnumFacing enumfacing) {
-		return (List) this.faceQuads.get(enumfacing.ordinal());
-	}
+    public static BakedModel bakeElements(
+        List<BlockElement> p_377425_,
+        TextureSlots p_378525_,
+        SpriteGetter p_375793_,
+        ModelState p_376680_,
+        boolean p_375745_,
+        boolean p_376866_,
+        boolean p_376846_,
+        ItemTransforms p_376883_
+    ) {
+        TextureAtlasSprite textureatlassprite = findSprite(p_375793_, p_378525_, "particle");
+        SimpleBakedModel.Builder simplebakedmodel$builder = new SimpleBakedModel.Builder(p_375745_, p_376866_, p_376846_, p_376883_)
+            .particle(textureatlassprite);
 
-	public List<BakedQuad> getGeneralQuads() {
-		return this.generalQuads;
-	}
+        for (BlockElement blockelement : p_377425_) {
+            for (Direction direction : blockelement.faces.keySet()) {
+                BlockElementFace blockelementface = blockelement.faces.get(direction);
+                TextureAtlasSprite textureatlassprite1 = findSprite(p_375793_, p_378525_, blockelementface.texture());
+                if (blockelementface.cullForDirection() == null) {
+                    simplebakedmodel$builder.addUnculledFace(bakeFace(blockelement, blockelementface, textureatlassprite1, direction, p_376680_));
+                } else {
+                    simplebakedmodel$builder.addCulledFace(
+                        Direction.rotate(p_376680_.getRotation().getMatrix(), blockelementface.cullForDirection()),
+                        bakeFace(blockelement, blockelementface, textureatlassprite1, direction, p_376680_)
+                    );
+                }
+            }
+        }
 
-	public boolean isAmbientOcclusion() {
-		return this.ambientOcclusion;
-	}
+        return simplebakedmodel$builder.build();
+    }
 
-	public boolean isGui3d() {
-		return this.gui3d;
-	}
+    private static BakedQuad bakeFace(
+        BlockElement p_377437_, BlockElementFace p_377187_, TextureAtlasSprite p_378098_, Direction p_377774_, ModelState p_376012_
+    ) {
+        return FaceBakery.bakeQuad(
+            p_377437_.from, p_377437_.to, p_377187_, p_378098_, p_377774_, p_376012_, p_377437_.rotation, p_377437_.shade, p_377437_.lightEmission
+        );
+    }
 
-	public boolean isBuiltInRenderer() {
-		return false;
-	}
+    private static TextureAtlasSprite findSprite(SpriteGetter p_376857_, TextureSlots p_377315_, String p_377512_) {
+        Material material = p_377315_.getMaterial(p_377512_);
+        return material != null ? p_376857_.get(material) : p_376857_.reportMissingReference(p_377512_);
+    }
 
-	public EaglerTextureAtlasSprite getParticleTexture() {
-		return this.texture;
-	}
+    @Override
+    public List<BakedQuad> getQuads(@Nullable BlockState p_235054_, @Nullable Direction p_235055_, RandomSource p_235056_) {
+        return p_235055_ == null ? this.unculledFaces : this.culledFaces.get(p_235055_);
+    }
 
-	public ItemCameraTransforms getItemCameraTransforms() {
-		return this.cameraTransforms;
-	}
+    @Override
+    public boolean useAmbientOcclusion() {
+        return this.hasAmbientOcclusion;
+    }
 
-	public static class Builder {
-		private final List<BakedQuad> builderGeneralQuads;
-		private final List<List<BakedQuad>> builderFaceQuads;
-		private final boolean builderAmbientOcclusion;
-		private EaglerTextureAtlasSprite builderTexture;
-		private boolean builderGui3d;
-		private ItemCameraTransforms builderCameraTransforms;
+    @Override
+    public boolean isGui3d() {
+        return this.isGui3d;
+    }
 
-		public Builder(ModelBlock parModelBlock) {
-			this(parModelBlock.isAmbientOcclusion(), parModelBlock.isGui3d(), parModelBlock.func_181682_g());
-		}
+    @Override
+    public boolean usesBlockLight() {
+        return this.usesBlockLight;
+    }
 
-		public Builder(IBakedModel parIBakedModel, EaglerTextureAtlasSprite parTextureAtlasSprite) {
-			this(parIBakedModel.isAmbientOcclusion(), parIBakedModel.isGui3d(),
-					parIBakedModel.getItemCameraTransforms());
-			this.builderTexture = parIBakedModel.getParticleTexture();
+    @Override
+    public TextureAtlasSprite getParticleIcon() {
+        return this.particleIcon;
+    }
 
-			EnumFacing[] facings = EnumFacing._VALUES;
-			for (int i = 0; i < facings.length; ++i) {
-				this.addFaceBreakingFours(parIBakedModel, parTextureAtlasSprite, facings[i]);
-			}
+    @Override
+    public ItemTransforms getTransforms() {
+        return this.transforms;
+    }
 
-			this.addGeneralBreakingFours(parIBakedModel, parTextureAtlasSprite);
-		}
+    @OnlyIn(Dist.CLIENT)
+    public static class Builder {
+        private final ImmutableList.Builder<BakedQuad> unculledFaces = ImmutableList.builder();
+        private final EnumMap<Direction, ImmutableList.Builder<BakedQuad>> culledFaces = Maps.newEnumMap(Direction.class);
+        private final boolean hasAmbientOcclusion;
+        @Nullable
+        private TextureAtlasSprite particleIcon;
+        private final boolean usesBlockLight;
+        private final boolean isGui3d;
+        private final ItemTransforms transforms;
 
-		private void addFaceBreakingFours(IBakedModel parIBakedModel, EaglerTextureAtlasSprite parTextureAtlasSprite,
-				EnumFacing parEnumFacing) {
-			List<BakedQuad> quads = parIBakedModel.getFaceQuads(parEnumFacing);
-			for (int i = 0, l = quads.size(); i < l; ++i) {
-				this.addFaceQuad(parEnumFacing, new BreakingFour(quads.get(i), parTextureAtlasSprite));
-			}
+        public Builder(boolean p_119521_, boolean p_119522_, boolean p_119523_, ItemTransforms p_119524_) {
+            this.hasAmbientOcclusion = p_119521_;
+            this.usesBlockLight = p_119522_;
+            this.isGui3d = p_119523_;
+            this.transforms = p_119524_;
 
-		}
+            for (Direction direction : Direction.values()) {
+                this.culledFaces.put(direction, ImmutableList.builder());
+            }
+        }
 
-		private void addGeneralBreakingFours(IBakedModel parIBakedModel,
-				EaglerTextureAtlasSprite parTextureAtlasSprite) {
-			List<BakedQuad> quads = parIBakedModel.getGeneralQuads();
-			for (int i = 0, l = quads.size(); i < l; ++i) {
-				this.addGeneralQuad(new BreakingFour(quads.get(i), parTextureAtlasSprite));
-			}
+        public SimpleBakedModel.Builder addCulledFace(Direction p_119531_, BakedQuad p_119532_) {
+            this.culledFaces.get(p_119531_).add(p_119532_);
+            return this;
+        }
 
-		}
+        public SimpleBakedModel.Builder addUnculledFace(BakedQuad p_119527_) {
+            this.unculledFaces.add(p_119527_);
+            return this;
+        }
 
-		private Builder(boolean parFlag, boolean parFlag2, ItemCameraTransforms parItemCameraTransforms) {
-			this.builderGeneralQuads = Lists.newArrayList();
-			this.builderFaceQuads = Lists.newArrayListWithCapacity(6);
+        public SimpleBakedModel.Builder particle(TextureAtlasSprite p_119529_) {
+            this.particleIcon = p_119529_;
+            return this;
+        }
 
-			for (int i = 0, l = EnumFacing._VALUES.length; i < l; ++i) {
-				this.builderFaceQuads.add(Lists.newArrayList());
-			}
+        public SimpleBakedModel.Builder item() {
+            return this;
+        }
 
-			this.builderAmbientOcclusion = parFlag;
-			this.builderGui3d = parFlag2;
-			this.builderCameraTransforms = parItemCameraTransforms;
-		}
-
-		public SimpleBakedModel.Builder addFaceQuad(EnumFacing parEnumFacing, BakedQuad parBakedQuad) {
-			((List) this.builderFaceQuads.get(parEnumFacing.ordinal())).add(parBakedQuad);
-			return this;
-		}
-
-		public SimpleBakedModel.Builder addGeneralQuad(BakedQuad parBakedQuad) {
-			this.builderGeneralQuads.add(parBakedQuad);
-			return this;
-		}
-
-		public SimpleBakedModel.Builder setTexture(EaglerTextureAtlasSprite parTextureAtlasSprite) {
-			this.builderTexture = parTextureAtlasSprite;
-			return this;
-		}
-
-		public IBakedModel makeBakedModel() {
-			if (this.builderTexture == null) {
-				throw new RuntimeException("Missing particle!");
-			} else {
-				return new SimpleBakedModel(this.builderGeneralQuads, this.builderFaceQuads,
-						this.builderAmbientOcclusion, this.builderGui3d, this.builderTexture,
-						this.builderCameraTransforms);
-			}
-		}
-	}
+        public BakedModel build() {
+            if (this.particleIcon == null) {
+                throw new RuntimeException("Missing particle!");
+            } else {
+                Map<Direction, List<BakedQuad>> map = Maps.transformValues(this.culledFaces, ImmutableList.Builder::build);
+                return new SimpleBakedModel(
+                    this.unculledFaces.build(), new EnumMap<>(map), this.hasAmbientOcclusion, this.usesBlockLight, this.isGui3d, this.particleIcon, this.transforms
+                );
+            }
+        }
+    }
 }

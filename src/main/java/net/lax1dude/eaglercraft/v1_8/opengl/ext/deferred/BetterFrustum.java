@@ -214,7 +214,7 @@ public class BetterFrustum {
 	 * <p>
 	 * Reference: <a href=
 	 * "http://gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf">
-	 * Fast Extraction of Viewing Frustum Planes from the World-View-Projection
+	 * Fast Extraction of Viewing Frustum Planes from the Level-View-Projection
 	 * Matrix</a>
 	 * 
 	 * @param m the {@link Matrix4fc matrix} to update <code>this</code> frustum
@@ -233,7 +233,7 @@ public class BetterFrustum {
 	 * <p>
 	 * Reference: <a href=
 	 * "http://gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf">
-	 * Fast Extraction of Viewing Frustum Planes from the World-View-Projection
+	 * Fast Extraction of Viewing Frustum Planes from the Level-View-Projection
 	 * Matrix</a>
 	 * 
 	 * @param m                the {@link Matrix4fc matrix} to update

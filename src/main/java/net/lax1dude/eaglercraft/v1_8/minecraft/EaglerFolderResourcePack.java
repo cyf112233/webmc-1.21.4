@@ -43,9 +43,17 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
 import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.client.resources.AbstractResourcePack;
+import net.minecraft.server.packs.AbstractPackResources;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackResources;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 
-public class EaglerFolderResourcePack extends AbstractResourcePack {
+public class EaglerFolderResourcePack extends AbstractPackResources {
 
 	public static final Logger logger = LogManager.getLogger("EaglerFolderResourcePack");
 
@@ -56,6 +64,9 @@ public class EaglerFolderResourcePack extends AbstractResourcePack {
 	private final String displayName;
 	private final Set<String> domains;
 	private final long timestamp;
+	private final Path filePath;
+	private final String resourcePackFile;
+	private final Map<String, InputStream> resources = new ConcurrentHashMap<>();
 
 	private static boolean isSupported = false;
 
@@ -69,6 +80,8 @@ public class EaglerFolderResourcePack extends AbstractResourcePack {
 
 	public EaglerFolderResourcePack(String resourcePackFileIn, String displayName, String prefix, Set<String> domains, long timestamp) {
 		super(resourcePackFileIn);
+		this.resourcePackFile = resourcePackFileIn;
+		this.filePath = Path.of(resourcePackFileIn);
 		this.displayName = displayName;
 		this.prefix = prefix;
 		this.domains = domains;
@@ -150,18 +163,17 @@ public class EaglerFolderResourcePack extends AbstractResourcePack {
 	}
 
 	@Override
+	protected InputStream getInputStreamByName(String path) throws IOException {
+		return (new VFile2(prefix, this.resourcePackFile, path)).getInputStream();
+	}
+
+	@Override
+	protected boolean hasResourceName(String path) {
+		return (new VFile2(prefix, this.resourcePackFile, path)).exists();
+	}
+
 	public Set<String> getResourceDomains() {
 		return domains;
-	}
-
-	@Override
-	protected InputStream getInputStreamByName(String var1) throws IOException {
-		return (new VFile2(prefix, this.resourcePackFile, var1)).getInputStream();
-	}
-
-	@Override
-	protected boolean hasResourceName(String var1) {
-		return (new VFile2(prefix, this.resourcePackFile, var1)).exists();
 	}
 
 	public long getTimestamp() {
@@ -219,7 +231,7 @@ public class EaglerFolderResourcePack extends AbstractResourcePack {
 		vigg: for(;;) {
 			for(int i = 0, l = existingLst.size(); i < l; ++i) {
 				EaglerFolderResourcePack rp = existingLst.get(i);
-				if(rp.resourcePackFile.equalsIgnoreCase(folderName)) {
+				if(rp.filePath.toString().equalsIgnoreCase(folderName)) {
 					folderName = folderName + "-";
 					continue vigg;
 				}
@@ -378,7 +390,7 @@ public class EaglerFolderResourcePack extends AbstractResourcePack {
 		final List<EaglerFolderResourcePack> lst = getFolderResourcePacks(SERVER_RESOURCE_PACKS);
 		for(int i = 0, l = lst.size(); i < l; ++i) {
 			EaglerFolderResourcePack rp = lst.get(i);
-			if(rp.resourcePackFile.equals(hash)) {
+			if(rp.filePath.toString().equals(hash)) {
 				cb.accept(rp);
 				return;
 			}
@@ -402,7 +414,7 @@ public class EaglerFolderResourcePack extends AbstractResourcePack {
 				if(lst.size() >= 5) {
 					lst.sort(Comparator.comparingLong(pack -> pack.timestamp));
 					for(int i = 0; i < lst.size() - 5; i++) {
-						deleteResourcePack(SERVER_RESOURCE_PACKS, lst.get(i).resourcePackFile);
+						deleteResourcePack(SERVER_RESOURCE_PACKS, lst.get(i).filePath.toString());
 					}
 				}
 				loading.run();

@@ -28,16 +28,16 @@ import net.lax1dude.eaglercraft.v1_8.socket.EaglercraftNetworkManager;
 import net.lax1dude.eaglercraft.v1_8.sp.SingleplayerServerController;
 import net.lax1dude.eaglercraft.v1_8.sp.internal.ClientPlatformSingleplayer;
 import net.lax1dude.eaglercraft.v1_8.sp.lan.LANServerController;
-import net.minecraft.network.EnumPacketDirection;
-import net.minecraft.network.Packet;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Component;
 
 public class ClientIntegratedServerNetworkManager extends EaglercraftNetworkManager {
 
 	private int debugPacketCounter = 0;
-	private final List<byte[]> recievedPacketBuffer = new LinkedList<>();
+	private final List<byte[]> recievedFriendlyByteBuf = new LinkedList<>();
 	public boolean isPlayerChannelOpen = false;
 
 	public ClientIntegratedServerNetworkManager(String channel) {
@@ -56,7 +56,7 @@ public class ClientIntegratedServerNetworkManager extends EaglercraftNetworkMana
 	}
 
 	@Override
-	public void closeChannel(IChatComponent reason) {
+	public void closeChannel(Component reason) {
 		LANServerController.closeLAN();
 		SingleplayerServerController.closeLocalPlayerChannel();
 		if(nethandler != null) {
@@ -67,25 +67,25 @@ public class ClientIntegratedServerNetworkManager extends EaglercraftNetworkMana
 	}
 
 	public void addRecievedPacket(byte[] next) {
-		recievedPacketBuffer.add(next);
+		recievedFriendlyByteBuf.add(next);
 	}
 
 	@Override
 	public void processReceivedPackets() throws IOException {
 		if(nethandler == null) return;
 
-		while(!recievedPacketBuffer.isEmpty()) {
-			byte[] next = recievedPacketBuffer.remove(0);
+		while(!recievedFriendlyByteBuf.isEmpty()) {
+			byte[] next = recievedFriendlyByteBuf.remove(0);
 			++debugPacketCounter;
 			try {
 				ByteBuf nettyBuffer = Unpooled.buffer(next, next.length);
 				nettyBuffer.writerIndex(next.length);
-				PacketBuffer input = new PacketBuffer(nettyBuffer);
+				FriendlyByteBuf input = new FriendlyByteBuf(nettyBuffer);
 				int pktId = input.readVarIntFromBuffer();
 				
 				Packet pkt;
 				try {
-					pkt = packetState.getPacket(EnumPacketDirection.CLIENTBOUND, pktId);
+					pkt = packetState.getPacket(PacketFlow.CLIENTBOUND, pktId);
 				}catch(IllegalAccessException | InstantiationException ex) {
 					throw new IOException("Recieved a packet with type " + pktId + " which is invalid!");
 				}
@@ -123,7 +123,7 @@ public class ClientIntegratedServerNetworkManager extends EaglercraftNetworkMana
 		
 		int i;
 		try {
-			i = packetState.getPacketId(EnumPacketDirection.SERVERBOUND, pkt);
+			i = packetState.getPacketId(PacketFlow.SERVERBOUND, pkt);
 		}catch(Throwable t) {
 			logger.error("Incorrect packet for state: {}", pkt.getClass().getSimpleName());
 			return;
@@ -153,7 +153,7 @@ public class ClientIntegratedServerNetworkManager extends EaglercraftNetworkMana
 			} catch (IOException e) {
 			}
 			clearRecieveQueue();
-			doClientDisconnect(new ChatComponentTranslation("disconnect.endOfStream"));
+			doClientDisconnect(new Component("disconnect.endOfStream"));
 			return true;
 		}else {
 			return false;
@@ -166,6 +166,6 @@ public class ClientIntegratedServerNetworkManager extends EaglercraftNetworkMana
 	}
 
 	public void clearRecieveQueue() {
-		recievedPacketBuffer.clear();
+		recievedFriendlyByteBuf.clear();
 	}
 }

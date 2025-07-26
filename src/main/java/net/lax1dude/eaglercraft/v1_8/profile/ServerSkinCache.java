@@ -28,9 +28,9 @@ import net.lax1dude.eaglercraft.v1_8.mojang.authlib.GameProfile;
 import net.lax1dude.eaglercraft.v1_8.mojang.authlib.TexturesProperty;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.CPacketGetOtherSkinEAG;
 import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.CPacketGetSkinByURLEAG;
-import net.minecraft.client.network.NetHandlerPlayClient;
+import net.lax1dude.eaglercraft.v1_8.socket.EaglercraftNetworkManager;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class ServerSkinCache {
 
@@ -130,7 +130,7 @@ public class ServerSkinCache {
 	private final Map<EaglercraftUUID, WaitingSkin> waitingSkins = new HashMap<>();
 	private final Map<EaglercraftUUID, Long> evictedSkins = new HashMap<>();
 
-	private final NetHandlerPlayClient netHandler;
+	private final EaglercraftNetworkManager netHandler;
 	protected final TextureManager textureManager;
 	
 	private final EaglercraftUUID clientPlayerId;
@@ -143,7 +143,7 @@ public class ServerSkinCache {
 	private static int texId = 0;
 	public static boolean needReloadClientSkin = false;
 
-	public ServerSkinCache(NetHandlerPlayClient netHandler, TextureManager textureManager) {
+	public ServerSkinCache(EaglercraftNetworkManager netHandler, TextureManager textureManager) {
 		this.netHandler = netHandler;
 		this.textureManager = textureManager;
 		this.clientPlayerId = EaglerProfile.getPlayerUUID();

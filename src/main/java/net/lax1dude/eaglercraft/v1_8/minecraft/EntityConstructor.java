@@ -16,10 +16,10 @@
 
 package net.lax1dude.eaglercraft.v1_8.minecraft;
 
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 
 public interface EntityConstructor<T> {
 
-	T createEntity(World world);
+    T createEntity(Level world);
 
 }

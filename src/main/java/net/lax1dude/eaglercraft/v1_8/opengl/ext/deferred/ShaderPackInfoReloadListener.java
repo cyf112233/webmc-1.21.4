@@ -21,28 +21,32 @@ import java.io.IOException;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.client.resources.IResourceManagerReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
 
-public class ShaderPackInfoReloadListener implements IResourceManagerReloadListener {
+public class ShaderPackInfoReloadListener implements ResourceManagerReloadListener {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	@Override
-	public void onResourceManagerReload(IResourceManager mcResourceManager) {
-		Minecraft mc = Minecraft.getMinecraft();
+	public void onResourceManagerReload(ResourceManager mcResourceManager) {
+		Minecraft mc = Minecraft.getInstance();
 		try {
-			mc.gameSettings.deferredShaderConf.reloadShaderPackInfo(mcResourceManager);
-		}catch(IOException ex) {
+			if (mc.options.deferredShaderConf != null) {
+				mc.options.deferredShaderConf.reloadShaderPackInfo(mcResourceManager);
+			}
+		} catch(IOException ex) {
 			logger.info("Could not reload shader pack info!");
-			logger.info(ex);
+			logger.info(ex.toString());
 			logger.info("Shaders have been disabled");
-			mc.gameSettings.shaders = false;
+			if (mc.options != null) {
+				mc.options.shaders = false;
+			}
 		}
 		TextureMap tm = mc.getTextureMapBlocks();
 		if(tm != null) {
-			mc.getTextureMapBlocks().setEnablePBREagler(mc.gameSettings.shaders);
+			mc.getTextureMapBlocks().setEnablePBREagler(mc.options.shaders);
 		}
 	}
 

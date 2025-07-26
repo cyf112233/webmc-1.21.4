@@ -17,8 +17,8 @@
 package net.lax1dude.eaglercraft.v1_8.socket;
 
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.minecraft.client.multiplayer.ServerAddress;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
 public class AddressResolver {
 
@@ -39,26 +39,44 @@ public class AddressResolver {
 	}
 
 	public static ServerAddress resolveAddressFromURI(String input) {
-		String uri = resolveURI(input);
 		String lc = input.toLowerCase();
 		if(lc.startsWith("ws://")) {
 			input = input.substring(5);
-		}else if(lc.startsWith("wss://")) {
+		} else if(lc.startsWith("wss://")) {
 			input = input.substring(6);
 		}
-		int port = EagRuntime.requireSSL() ? 443: 80;
-		int i = input.indexOf('/');
-		if(i != -1) {
-			input = input.substring(0, i);
-		}
-		i = input.lastIndexOf(':');
-		if(i != -1) {
-			try {
-				port = Integer.parseInt(input.substring(i + 1));
-			}catch(Throwable t) {
+		
+		int port = EagRuntime.requireSSL() ? 443 : 80;
+		int pathIndex = input.indexOf('/');
+		String hostAndPort = pathIndex != -1 ? input.substring(0, pathIndex) : input;
+		
+		// Handle IPv6 addresses (enclosed in [ ])
+		if (hostAndPort.startsWith("[")) {
+			int endBracket = hostAndPort.indexOf(']');
+			if (endBracket != -1) {
+				String host = hostAndPort.substring(1, endBracket);
+				if (hostAndPort.length() > endBracket + 1 && hostAndPort.charAt(endBracket + 1) == ':') {
+					try {
+						port = Integer.parseInt(hostAndPort.substring(endBracket + 2));
+					} catch (NumberFormatException ignored) {
+						// Use default port
+					}
+				}
+				return ServerAddress.parseString(host + ":" + port);
 			}
 		}
-		return new ServerAddress(uri, port);
+		
+		// Handle regular host:port
+		int colonIndex = hostAndPort.lastIndexOf(':');
+		if (colonIndex != -1) {
+			try {
+				port = Integer.parseInt(hostAndPort.substring(colonIndex + 1));
+			} catch (NumberFormatException ignored) {
+				// Use default port and entire string as host
+			}
+		}
+		
+		return new ServerAddress(hostAndPort, port);
 	}
 	
 }

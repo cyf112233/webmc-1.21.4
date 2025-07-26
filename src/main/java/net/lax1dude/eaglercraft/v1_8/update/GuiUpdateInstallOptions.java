@@ -17,22 +17,22 @@
 package net.lax1dude.eaglercraft.v1_8.update;
 
 import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
-import net.lax1dude.eaglercraft.v1_8.minecraft.GuiScreenGenericErrorMessage;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.lax1dude.eaglercraft.v1_8.minecraft.ScreenGenericErrorMessage;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 
-public class GuiUpdateInstallOptions extends GuiScreen {
+public class GuiUpdateInstallOptions extends Screen {
 
-	protected final GuiScreen parent;
-	protected final GuiScreen onDone;
+	protected final Screen parent;
+	protected final Screen onDone;
 	protected final UpdateDataObj updateData;
 	protected boolean makeDefault;
 	protected boolean enableCountdown;
-	protected GuiButton makeDefaultBtn;
-	protected GuiButton enableCountdownBtn;
+	protected net.minecraft.client.gui.components.Button makeDefaultBtn;
+	protected net.minecraft.client.gui.components.Button enableCountdownBtn;
 
-	public GuiUpdateInstallOptions(GuiScreen parent, GuiScreen onDone, UpdateDataObj updateData) {
+	public GuiUpdateInstallOptions(Screen parent, Screen onDone, UpdateDataObj updateData) {
 		this.parent = parent;
 		this.onDone = onDone;
 		this.updateData = updateData;
@@ -42,40 +42,40 @@ public class GuiUpdateInstallOptions extends GuiScreen {
 
 	public void initGui() {
 		this.buttonList.clear();
-		this.buttonList.add(makeDefaultBtn = new GuiButton(0, this.width / 2 - 100, this.height / 6 + 46,
-				I18n.format("updateInstall.setDefault") + ": " + I18n.format(makeDefault ? "gui.yes" : "gui.no")));
-		this.buttonList.add(enableCountdownBtn = new GuiButton(1, this.width / 2 - 100, this.height / 6 + 76,
-				I18n.format("updateInstall.setCountdown") + ": "
-						+ I18n.format(enableCountdown ? "gui.yes" : "gui.no")));
-		this.buttonList.add(new GuiButton(2, this.width / 2 - 100, this.height / 6 + 110, I18n.format("updateInstall.install")));
-		this.buttonList.add(new GuiButton(3, this.width / 2 - 100, this.height / 6 + 140, I18n.format("gui.cancel")));
+		this.buttonList.add(makeDefaultBtn = new net.minecraft.client.gui.components.Button(0, this.width / 2 - 100, this.height / 6 + 46,
+				I18n.get("updateInstall.setDefault") + ": " + I18n.get(makeDefault ? "gui.yes" : "gui.no")));
+		this.buttonList.add(enableCountdownBtn = new net.minecraft.client.gui.components.Button(1, this.width / 2 - 100, this.height / 6 + 76,
+				I18n.get("updateInstall.setCountdown") + ": "
+						+ I18n.get(enableCountdown ? "gui.yes" : "gui.no")));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(2, this.width / 2 - 100, this.height / 6 + 110, I18n.get("updateInstall.install")));
+		this.buttonList.add(new net.minecraft.client.gui.components.Button(3, this.width / 2 - 100, this.height / 6 + 140, I18n.get("gui.cancel")));
 		
 	}
 
-	public void actionPerformed(GuiButton btn) {
+	public void actionPerformed(net.minecraft.client.gui.components.Button btn) {
 		if(btn.id == 0) {
 			makeDefault = !makeDefault;
-			makeDefaultBtn.displayString = I18n.format("updateInstall.setDefault") + ": " + I18n.format(makeDefault ? "gui.yes" : "gui.no");
+			makeDefaultBtn.displayString = I18n.get("updateInstall.setDefault") + ": " + I18n.get(makeDefault ? "gui.yes" : "gui.no");
 		}else if(btn.id == 1) {
 			enableCountdown = !enableCountdown;
-			enableCountdownBtn.displayString = I18n.format("updateInstall.setCountdown") + ": " + I18n.format(enableCountdown ? "gui.yes" : "gui.no");
+			enableCountdownBtn.displayString = I18n.get("updateInstall.setCountdown") + ": " + I18n.get(enableCountdown ? "gui.yes" : "gui.no");
 		}else if(btn.id == 2) {
-			mc.loadingScreen.eaglerShow(I18n.format("updateSuccess.installing"), null);
+			mc.loadingScreen.eaglerShow(I18n.get("updateSuccess.installing"), null);
 			try {
 				UpdateService.installSignedClient(updateData.clientSignature, updateData.clientBundle, makeDefault, enableCountdown);
 			}catch(Throwable t) {
-				mc.displayGuiScreen(new GuiScreenGenericErrorMessage("installFailed.title", t.toString(), onDone));
+				mc.displayScreen(new ScreenGenericErrorMessage("installFailed.title", t.toString(), onDone));
 				return;
 			}
-			mc.displayGuiScreen(onDone);
+			mc.displayScreen(onDone);
 		}else if(btn.id == 3) {
-			mc.displayGuiScreen(parent);
+			mc.displayScreen(parent);
 		}
 	}
 
 	public void drawScreen(int mx, int my, float partialTicks) {
 		this.drawDefaultBackground();
-		this.drawCenteredString(fontRendererObj, I18n.format("updateInstall.title"), this.width / 2, 40, 11184810);
+		this.drawCenteredString(fontRendererObj, I18n.get("updateInstall.title"), this.width / 2, 40, 11184810);
 		this.drawCenteredString(fontRendererObj,
 				updateData.clientSignature.bundleDisplayName + " " + updateData.clientSignature.bundleDisplayVersion,
 				this.width / 2, 60, 0xFFFFAA);

@@ -27,7 +27,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.opengl.GLSLHeader;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class ShaderCompiler {
 
