@@ -1,0 +1,38 @@
+name: Build Offline Download (Windows)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Compile EPK
+      run: |
+        .\CompileEPK.bat
+
+    - name: Compile JavaScript
+      run: |
+        .\CompileJS.bat
+
+    - name: Make Offline Download
+      run: |
+        .\MakeOfflineDownload.bat
+
+    - name: Upload Offline Download artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: offline-download-windows
+        path: javascript/
