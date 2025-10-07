@@ -1,4 +1,4 @@
 @echo off
-title gradlew generateJavascript
-call gradlew generateJavascript
+title gradlew generateJavascript --continue
+call gradlew generateJavascript --continue
 pause
